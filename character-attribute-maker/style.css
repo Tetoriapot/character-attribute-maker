@@ -325,6 +325,36 @@ button:disabled {
   margin-bottom: 12px;
 }
 
+.layout-position-control {
+  display: grid;
+  margin-bottom: 13px;
+  padding: 12px;
+  background: var(--surface-muted);
+  border: 1px solid #e1e8e5;
+  border-radius: 6px;
+  gap: 8px;
+}
+
+.field-label {
+  color: #53615c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.outside-label-options {
+  padding-top: 3px;
+  border-top: 1px solid #dde6e2;
+}
+
+.outside-label-options[hidden] {
+  display: none;
+}
+
+.layout-position-control .field-help {
+  margin-top: 0;
+  line-height: 1.5;
+}
+
 .field input[type="text"],
 .field select {
   width: 100%;
@@ -923,7 +953,7 @@ kbd {
   border-radius: 7px;
 }
 
-.map-stage {
+.map-composition {
   --map-axis-color: #71827c;
   --map-axis-start-color: #71827c;
   --map-axis-end-color: #71827c;
@@ -938,18 +968,63 @@ kbd {
   aspect-ratio: 1;
   overflow: hidden;
   color: var(--map-text-color);
-  background: #fffdf8;
-  border: 1px solid rgba(68, 86, 80, 0.12);
-  box-shadow: 0 3px 12px rgba(38, 51, 47, 0.08);
   container-type: inline-size;
   font-family: var(--map-font-family);
   isolation: isolate;
+}
+
+.map-stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  overflow: hidden;
+  color: inherit;
+  background: #fffdf8;
+  border: 0;
+  box-shadow:
+    inset 0 0 0 1px rgba(68, 86, 80, 0.12),
+    0 3px 12px rgba(38, 51, 47, 0.08);
+  font-family: inherit;
   touch-action: manipulation;
   user-select: none;
 }
 
+.map-composition.is-layout-outside {
+  background: #fffdf8;
+  border: 0;
+  box-shadow:
+    inset 0 0 0 1px rgba(68, 86, 80, 0.14),
+    0 3px 12px rgba(38, 51, 47, 0.08);
+}
+
+.map-composition.is-layout-outside .map-stage {
+  inset: auto;
+  top: 16.75%;
+  left: 12.5%;
+  width: 75%;
+  height: 75%;
+  border: 0;
+  box-shadow: none;
+}
+
+.map-composition.is-layout-outside .map-stage::after {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  box-shadow: inset 0 0 0 2px var(--map-axis-start-color);
+  opacity: 0.72;
+  pointer-events: none;
+  content: "";
+}
+
 .map-stage.is-drop-target {
   outline: 4px solid rgba(47, 127, 115, 0.34);
+  outline-offset: -4px;
+}
+
+.map-composition:not(.is-layout-outside) .map-stage:focus-visible {
   outline-offset: -4px;
 }
 
@@ -1039,6 +1114,21 @@ kbd {
   pointer-events: none;
 }
 
+.map-composition.is-layout-outside .map-title {
+  top: 1.35%;
+  left: 8%;
+  display: block;
+  width: 84%;
+  max-height: none;
+  font-size: clamp(15px, 4.25cqw, 34px);
+  line-height: 1.08;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  -webkit-line-clamp: unset;
+}
+
 .map-title[hidden] {
   display: none;
 }
@@ -1086,6 +1176,85 @@ kbd {
   transform: translateY(-50%);
 }
 
+.map-composition.is-layout-outside .axis-label {
+  max-width: 56%;
+  font-size: clamp(11px, 3cqw, 24px);
+}
+
+.map-composition.is-layout-outside .map-title,
+.map-composition.is-layout-outside .axis-label {
+  cursor: help;
+  pointer-events: auto;
+}
+
+.map-composition.is-layout-outside .axis-label-top {
+  top: 11.8%;
+}
+
+.map-composition.is-layout-outside .axis-label-bottom {
+  bottom: 1.55%;
+}
+
+.map-composition.is-layout-outside .axis-label-top,
+.map-composition.is-layout-outside .axis-label-bottom {
+  display: block;
+  width: 56%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  -webkit-line-clamp: unset;
+}
+
+.map-composition.is-layout-outside .axis-label-left,
+.map-composition.is-layout-outside .axis-label-right {
+  top: 54.25%;
+  max-width: 9.5%;
+  max-height: 62%;
+  -webkit-line-clamp: 3;
+}
+
+.map-composition.is-layout-outside .axis-label-left {
+  left: 2.35%;
+}
+
+.map-composition.is-layout-outside .axis-label-right {
+  right: 2.35%;
+}
+
+.map-composition.is-layout-outside:not(.is-side-labels-vertical) .axis-label-left,
+.map-composition.is-layout-outside:not(.is-side-labels-vertical) .axis-label-right {
+  display: block;
+  width: 9.5%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  -webkit-line-clamp: unset;
+}
+
+.map-composition.is-layout-outside.is-side-labels-vertical .axis-label-left,
+.map-composition.is-layout-outside.is-side-labels-vertical .axis-label-right {
+  display: block;
+  width: auto;
+  max-width: 2.2em;
+  overflow: hidden;
+  letter-spacing: 0.08em;
+  line-height: 1.08;
+  text-orientation: upright;
+  white-space: nowrap;
+  writing-mode: vertical-rl;
+  -webkit-line-clamp: unset;
+}
+
+.map-composition.is-layout-outside.is-side-labels-vertical .axis-label-left {
+  left: 5.625%;
+  transform: translate(-50%, -50%);
+}
+
+.map-composition.is-layout-outside.is-side-labels-vertical .axis-label-right {
+  right: 5.625%;
+  transform: translate(50%, -50%);
+}
+
 .map-empty-hint {
   position: absolute;
   top: 50%;
@@ -1131,6 +1300,7 @@ kbd {
   position: absolute;
   inset: 0;
   z-index: 4;
+  container-type: inline-size;
   pointer-events: none;
 }
 

@@ -11,8 +11,11 @@
   const SUPPORTED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
   const SUPPORTED_EXTENSIONS = /\.(png|jpe?g|webp)$/i;
   const BACKGROUND_MODES = new Set(["solid", "gradient", "image", "transparent"]);
+  const LABEL_LAYOUTS = new Set(["inside", "outside"]);
   const AXIS_LENGTH_MIN = 50;
   const AXIS_LENGTH_MAX = 90;
+  const OUTSIDE_VERTICAL_LABEL_MAX_CHARACTERS = 11;
+  const OUTSIDE_PLOT_RECT = Object.freeze({ x: 100, y: 134, size: 600 });
   const TRANSPARENCY_GRID =
     "linear-gradient(45deg, #e4e9e7 25%, transparent 25%), " +
     "linear-gradient(-45deg, #e4e9e7 25%, transparent 25%), " +
@@ -71,6 +74,10 @@
     resetButton: document.querySelector("#resetButton"),
     mapTitleInput: document.querySelector("#mapTitleInput"),
     mapTitleDisplay: document.querySelector("#mapTitleDisplay"),
+    insideLabelLayoutButton: document.querySelector("#insideLabelLayoutButton"),
+    outsideLabelLayoutButton: document.querySelector("#outsideLabelLayoutButton"),
+    outsideLabelOptions: document.querySelector("#outsideLabelOptions"),
+    verticalSideLabelsInput: document.querySelector("#verticalSideLabelsInput"),
     topLabelInput: document.querySelector("#topLabelInput"),
     bottomLabelInput: document.querySelector("#bottomLabelInput"),
     leftLabelInput: document.querySelector("#leftLabelInput"),
@@ -133,6 +140,7 @@
     includeBackgroundInput: document.querySelector("#includeBackgroundInput"),
     exportScaleInput: document.querySelector("#exportScaleInput"),
     exportButton: document.querySelector("#exportButton"),
+    mapComposition: document.querySelector("#mapComposition"),
     mapStage: document.querySelector("#mapStage"),
     placementLayer: document.querySelector("#placementLayer"),
     mapEmptyHint: document.querySelector("#mapEmptyHint"),
@@ -177,6 +185,8 @@
         axisLength: 84,
         textColor: "#26332f",
         fontFamily: "yu-gothic-ui",
+        labelLayout: "inside",
+        verticalSideLabels: true,
         activePreset: "white",
       },
       libraryIds: [],
@@ -205,6 +215,12 @@
       }
       if (appearance.axisMode === "solid" || appearance.axisMode === "gradient") {
         state.appearance.axisMode = appearance.axisMode;
+      }
+      if (LABEL_LAYOUTS.has(appearance.labelLayout)) {
+        state.appearance.labelLayout = appearance.labelLayout;
+      }
+      if (typeof appearance.verticalSideLabels === "boolean") {
+        state.appearance.verticalSideLabels = appearance.verticalSideLabels;
       }
       for (const key of [
         "backgroundColor",
@@ -315,6 +331,12 @@
 
   function restoreSnapshot(snapshot) {
     state = cloneData(snapshot);
+    if (!LABEL_LAYOUTS.has(state.appearance.labelLayout)) {
+      state.appearance.labelLayout = "inside";
+    }
+    if (typeof state.appearance.verticalSideLabels !== "boolean") {
+      state.appearance.verticalSideLabels = true;
+    }
     state.libraryIds = state.libraryIds.filter((id) => assets.has(id));
     state.placements = state.placements.filter((placement) => assets.has(placement.assetId));
     if (!assets.has(state.backgroundAssetId)) state.backgroundAssetId = null;
@@ -656,21 +678,41 @@
     updateMapEmptyHint();
   }
 
+  function truncateCharacters(text, maxCharacters) {
+    const characters = Array.from(text);
+    if (characters.length <= maxCharacters) return text;
+    return `${characters.slice(0, Math.max(0, maxCharacters - 1)).join("")}…`;
+  }
+
+  function renderAxisLabel(label, key, value) {
+    const useVerticalLimit =
+      state.appearance.labelLayout === "outside" &&
+      state.appearance.verticalSideLabels &&
+      (key === "left" || key === "right");
+    label.textContent = useVerticalLimit
+      ? truncateCharacters(value, OUTSIDE_VERTICAL_LABEL_MAX_CHARACTERS)
+      : value;
+    if (value.trim()) label.title = value;
+    else label.removeAttribute("title");
+  }
+
   function renderAxis() {
     const title = state.mapTitle.trim();
     dom.mapTitleInput.value = state.mapTitle;
     dom.mapTitleDisplay.textContent = title;
     dom.mapTitleDisplay.hidden = !title;
+    if (title) dom.mapTitleDisplay.title = state.mapTitle;
+    else dom.mapTitleDisplay.removeAttribute("title");
 
     const bindings = [
-      [dom.topLabelInput, dom.topAxisLabel, state.axis.top],
-      [dom.bottomLabelInput, dom.bottomAxisLabel, state.axis.bottom],
-      [dom.leftLabelInput, dom.leftAxisLabel, state.axis.left],
-      [dom.rightLabelInput, dom.rightAxisLabel, state.axis.right],
+      [dom.topLabelInput, dom.topAxisLabel, "top", state.axis.top],
+      [dom.bottomLabelInput, dom.bottomAxisLabel, "bottom", state.axis.bottom],
+      [dom.leftLabelInput, dom.leftAxisLabel, "left", state.axis.left],
+      [dom.rightLabelInput, dom.rightAxisLabel, "right", state.axis.right],
     ];
-    for (const [input, label, value] of bindings) {
+    for (const [input, label, key, value] of bindings) {
       input.value = value;
-      label.textContent = value;
+      renderAxisLabel(label, key, value);
     }
   }
 
@@ -678,37 +720,44 @@
     return FONT_OPTIONS[state.appearance.fontFamily] || FONT_OPTIONS["yu-gothic-ui"];
   }
 
+  function resetPreviewBackground(element) {
+    element.style.backgroundColor = "transparent";
+    element.style.backgroundImage = "none";
+    element.style.backgroundPosition = "center";
+    element.style.backgroundSize = "auto";
+    element.style.backgroundRepeat = "no-repeat";
+  }
+
   function applyMapBackground() {
     const { backgroundMode } = state.appearance;
     const asset = assets.get(state.backgroundAssetId);
-    dom.mapStage.style.backgroundColor = "transparent";
-    dom.mapStage.style.backgroundImage = "none";
-    dom.mapStage.style.backgroundPosition = "center";
-    dom.mapStage.style.backgroundSize = "auto";
-    dom.mapStage.style.backgroundRepeat = "no-repeat";
+    const target =
+      state.appearance.labelLayout === "outside" ? dom.mapComposition : dom.mapStage;
+    resetPreviewBackground(dom.mapComposition);
+    resetPreviewBackground(dom.mapStage);
 
     if (backgroundMode === "solid") {
-      dom.mapStage.style.backgroundColor = state.appearance.backgroundColor;
+      target.style.backgroundColor = state.appearance.backgroundColor;
       return;
     }
 
     if (backgroundMode === "gradient") {
-      dom.mapStage.style.backgroundImage =
+      target.style.backgroundImage =
         `linear-gradient(135deg, ${state.appearance.gradientStart}, ${state.appearance.gradientEnd})`;
-      dom.mapStage.style.backgroundSize = "cover";
+      target.style.backgroundSize = "cover";
       return;
     }
 
     const imageLayer = backgroundMode === "image" && asset ? `url("${asset.src}"), ` : "";
-    dom.mapStage.style.backgroundColor = "#ffffff";
-    dom.mapStage.style.backgroundImage = `${imageLayer}${TRANSPARENCY_GRID}`;
-    dom.mapStage.style.backgroundPosition = imageLayer
+    target.style.backgroundColor = "#ffffff";
+    target.style.backgroundImage = `${imageLayer}${TRANSPARENCY_GRID}`;
+    target.style.backgroundPosition = imageLayer
       ? "center, 0 0, 0 8px, 8px -8px, -8px 0"
       : "0 0, 0 8px, 8px -8px, -8px 0";
-    dom.mapStage.style.backgroundSize = imageLayer
+    target.style.backgroundSize = imageLayer
       ? "cover, 16px 16px, 16px 16px, 16px 16px, 16px 16px"
       : "16px 16px";
-    dom.mapStage.style.backgroundRepeat = imageLayer
+    target.style.backgroundRepeat = imageLayer
       ? "no-repeat, repeat, repeat, repeat, repeat"
       : "repeat";
   }
@@ -730,21 +779,32 @@
     const axisColors = getAxisColors();
     const backgroundAsset = assets.get(state.backgroundAssetId);
     const axisInset = (100 - state.appearance.axisLength) / 2;
+    const isOutsideLayout = state.appearance.labelLayout === "outside";
+    dom.mapComposition.classList.toggle("is-layout-outside", isOutsideLayout);
+    dom.mapComposition.classList.toggle(
+      "is-side-labels-vertical",
+      isOutsideLayout && state.appearance.verticalSideLabels,
+    );
     applyMapBackground();
-    dom.mapStage.style.setProperty("--map-axis-color", state.appearance.axisColor);
-    dom.mapStage.style.setProperty("--map-axis-start-color", axisColors.start);
-    dom.mapStage.style.setProperty("--map-axis-end-color", axisColors.end);
-    dom.mapStage.style.setProperty(
+    dom.mapComposition.style.setProperty("--map-axis-color", state.appearance.axisColor);
+    dom.mapComposition.style.setProperty("--map-axis-start-color", axisColors.start);
+    dom.mapComposition.style.setProperty("--map-axis-end-color", axisColors.end);
+    dom.mapComposition.style.setProperty(
       "--map-axis-horizontal",
       `linear-gradient(90deg, ${axisColors.start}, ${axisColors.end})`,
     );
-    dom.mapStage.style.setProperty(
+    dom.mapComposition.style.setProperty(
       "--map-axis-vertical",
       `linear-gradient(180deg, ${axisColors.start}, ${axisColors.end})`,
     );
-    dom.mapStage.style.setProperty("--map-axis-inset", `${axisInset}%`);
-    dom.mapStage.style.setProperty("--map-text-color", state.appearance.textColor);
-    dom.mapStage.style.setProperty("--map-font-family", getFontStack());
+    dom.mapComposition.style.setProperty("--map-axis-inset", `${axisInset}%`);
+    dom.mapComposition.style.setProperty("--map-text-color", state.appearance.textColor);
+    dom.mapComposition.style.setProperty("--map-font-family", getFontStack());
+
+    dom.insideLabelLayoutButton.setAttribute("aria-pressed", String(!isOutsideLayout));
+    dom.outsideLabelLayoutButton.setAttribute("aria-pressed", String(isOutsideLayout));
+    dom.outsideLabelOptions.hidden = !isOutsideLayout;
+    dom.verticalSideLabelsInput.checked = state.appearance.verticalSideLabels;
 
     dom.backgroundModeInput.value = state.appearance.backgroundMode;
     dom.backgroundSolidFields.hidden = state.appearance.backgroundMode !== "solid";
@@ -1178,6 +1238,17 @@
     syncCharacterSettings();
   }
 
+  function setLabelLayout(layout) {
+    if (!LABEL_LAYOUTS.has(layout) || state.appearance.labelLayout === layout) return;
+    finishPendingEdit();
+    const before = captureSnapshot();
+    state.appearance.labelLayout = layout;
+    commitBefore(before);
+    renderAxis();
+    renderAppearance();
+    showToast(layout === "outside" ? "文字を図の外側へ配置しました" : "文字を図の内側へ配置しました");
+  }
+
   function applyPreset(name) {
     const preset = PRESETS[name];
     if (!preset) return;
@@ -1256,6 +1327,55 @@
     const lineHeight = fontSize * 1.14;
     const startY = y - ((lines.length - 1) * lineHeight) / 2;
     lines.forEach((line, index) => context.fillText(line, x, startY + index * lineHeight));
+    context.restore();
+  }
+
+  function drawSingleLineAxisLabel(
+    context,
+    text,
+    x,
+    y,
+    maxWidth,
+    textAlign = "center",
+    initialFontSize = 24,
+  ) {
+    if (!text.trim()) return;
+    context.save();
+    context.fillStyle = state.appearance.textColor;
+    context.textAlign = textAlign;
+    context.textBaseline = "middle";
+    context.font = `800 ${initialFontSize}px ${getFontStack()}`;
+    context.fillText(fitTextWithEllipsis(context, text, maxWidth), x, y);
+    context.restore();
+  }
+
+  function drawVerticalAxisLabel(context, text, x, y, maxHeight, initialFontSize = 24) {
+    if (!text.trim()) return;
+    const characters = Array.from(
+      truncateCharacters(text.trim(), OUTSIDE_VERTICAL_LABEL_MAX_CHARACTERS),
+    );
+    let fontSize = initialFontSize;
+    let lineHeight = fontSize * 1.12;
+    while (fontSize > 14 && characters.length * lineHeight > maxHeight) {
+      fontSize -= 1;
+      lineHeight = fontSize * 1.12;
+    }
+
+    const maxCharacters = Math.max(1, Math.floor(maxHeight / lineHeight));
+    const visibleCharacters = characters.slice(0, maxCharacters);
+    if (visibleCharacters.length < characters.length) {
+      visibleCharacters[visibleCharacters.length - 1] = "…";
+    }
+
+    context.save();
+    context.fillStyle = state.appearance.textColor;
+    context.font = `800 ${fontSize}px ${getFontStack()}`;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    const startY = y - ((visibleCharacters.length - 1) * lineHeight) / 2;
+    visibleCharacters.forEach((character, index) => {
+      context.fillText(character, x, startY + index * lineHeight);
+    });
     context.restore();
   }
 
@@ -1394,6 +1514,11 @@
     }
   }
 
+  function getExportPlotRect() {
+    if (state.appearance.labelLayout === "outside") return OUTSIDE_PLOT_RECT;
+    return { x: 0, y: 0, size: MAP_SIZE };
+  }
+
   function createExportCanvas(scale) {
     const canvas = document.createElement("canvas");
     canvas.width = MAP_SIZE * scale;
@@ -1418,10 +1543,17 @@
       }
     }
 
+    const isOutsideLayout = state.appearance.labelLayout === "outside";
+    const plotRect = getExportPlotRect();
+    const plotScale = plotRect.size / MAP_SIZE;
     const axisColors = getAxisColors();
     const axisInset = (MAP_SIZE * (100 - state.appearance.axisLength)) / 200;
     const axisStart = axisInset;
     const axisEnd = MAP_SIZE - axisInset;
+
+    context.save();
+    context.translate(plotRect.x, plotRect.y);
+    context.scale(plotScale, plotScale);
     const horizontalGradient = context.createLinearGradient(
       axisStart,
       MAP_SIZE / 2,
@@ -1438,8 +1570,6 @@
     );
     verticalGradient.addColorStop(0, axisColors.start);
     verticalGradient.addColorStop(1, axisColors.end);
-
-    context.save();
     context.lineWidth = 2.5;
     context.lineCap = "round";
 
@@ -1458,15 +1588,48 @@
     drawArrowHead(context, axisEnd, MAP_SIZE / 2, 0, axisColors.end);
     drawArrowHead(context, MAP_SIZE / 2, axisStart, -Math.PI / 2, axisColors.start);
     drawArrowHead(context, MAP_SIZE / 2, axisEnd, Math.PI / 2, axisColors.end);
-    context.restore();
 
-    drawAxisLabel(context, state.mapTitle, 18, 36, 220, "left", 22);
-    drawAxisLabel(context, state.axis.top, MAP_SIZE / 2, 27, 300);
-    drawAxisLabel(context, state.axis.bottom, MAP_SIZE / 2, MAP_SIZE - 27, 300);
-    drawAxisLabel(context, state.axis.left, 18, MAP_SIZE / 2, 220, "left");
-    drawAxisLabel(context, state.axis.right, MAP_SIZE - 18, MAP_SIZE / 2, 220, "right");
+    if (!isOutsideLayout) {
+      drawAxisLabel(context, state.mapTitle, 18, 36, 220, "left", 22);
+      drawAxisLabel(context, state.axis.top, MAP_SIZE / 2, 27, 300);
+      drawAxisLabel(context, state.axis.bottom, MAP_SIZE / 2, MAP_SIZE - 27, 300);
+      drawAxisLabel(context, state.axis.left, 18, MAP_SIZE / 2, 220, "left");
+      drawAxisLabel(context, state.axis.right, MAP_SIZE - 18, MAP_SIZE / 2, 220, "right");
+    }
 
     for (const placement of state.placements) drawPlacement(context, placement);
+    context.restore();
+
+    if (isOutsideLayout) {
+      context.save();
+      context.globalAlpha = 0.72;
+      context.strokeStyle = axisColors.start;
+      context.lineWidth = 2;
+      context.strokeRect(
+        plotRect.x + 1,
+        plotRect.y + 1,
+        plotRect.size - 2,
+        plotRect.size - 2,
+      );
+      context.restore();
+
+      drawSingleLineAxisLabel(context, state.mapTitle, MAP_SIZE / 2, 29, 672, "center", 34);
+      drawSingleLineAxisLabel(context, state.axis.top, MAP_SIZE / 2, 108, 448);
+      drawSingleLineAxisLabel(context, state.axis.bottom, MAP_SIZE / 2, 774, 448);
+      if (state.appearance.verticalSideLabels) {
+        drawVerticalAxisLabel(context, state.axis.left, 45, 434, 480, 24);
+        drawVerticalAxisLabel(context, state.axis.right, MAP_SIZE - 45, 434, 480, 24);
+      } else {
+        drawSingleLineAxisLabel(context, state.axis.left, 57, 434, 76);
+        drawSingleLineAxisLabel(
+          context,
+          state.axis.right,
+          MAP_SIZE - 57,
+          434,
+          76,
+        );
+      }
+    }
     return canvas;
   }
 
@@ -1528,11 +1691,24 @@
           state.axis[key] = input.value;
         },
         () => {
-          label.textContent = input.value;
+          renderAxisLabel(label, key, input.value);
           savePreferencesSoon();
         },
       );
     }
+
+    bindStatefulControl(
+      dom.verticalSideLabelsInput,
+      () => {
+        state.appearance.verticalSideLabels = dom.verticalSideLabelsInput.checked;
+      },
+      () => {
+        renderAppearance();
+        renderAxis();
+        savePreferencesSoon();
+      },
+      "change",
+    );
 
     bindStatefulControl(
       dom.characterNameInput,
@@ -1748,6 +1924,8 @@
     dom.duplicateButton.addEventListener("click", duplicateSelected);
     dom.squareShapeButton.addEventListener("click", () => setPlacementShape("square"));
     dom.circleShapeButton.addEventListener("click", () => setPlacementShape("circle"));
+    dom.insideLabelLayoutButton.addEventListener("click", () => setLabelLayout("inside"));
+    dom.outsideLabelLayoutButton.addEventListener("click", () => setLabelLayout("outside"));
     dom.exportButton.addEventListener("click", exportPng);
 
     for (const button of dom.presetButtons) {

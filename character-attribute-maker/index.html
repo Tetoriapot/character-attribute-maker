@@ -82,6 +82,31 @@
             />
           </label>
 
+          <div class="layout-position-control">
+            <span id="labelLayoutLabel" class="field-label">タイトル・評価語の配置</span>
+            <div class="segmented-control" role="group" aria-labelledby="labelLayoutLabel">
+              <button id="insideLabelLayoutButton" type="button" aria-pressed="true">
+                図の内側
+              </button>
+              <button id="outsideLabelLayoutButton" type="button" aria-pressed="false">
+                図の外側
+              </button>
+            </div>
+            <div id="outsideLabelOptions" class="outside-label-options" hidden>
+              <label class="switch-row">
+                <span>
+                  <strong>左右ラベルを縦書き</strong>
+                  <small>外側の左右に、1文字ずつ縦に表示します</small>
+                </span>
+                <input id="verticalSideLabelsInput" type="checkbox" checked />
+                <span class="switch" aria-hidden="true"></span>
+              </label>
+            </div>
+            <small class="field-help">
+              外側を選ぶと、タイトルと上下左右の言葉をマップ枠の外へ配置します。長い言葉は省略表示されます
+            </small>
+          </div>
+
           <div class="axis-input-grid">
             <label class="field">
               <span>上</span>
@@ -462,28 +487,31 @@
         </div>
 
         <div class="map-frame">
-          <div
-            id="mapStage"
-            class="map-stage"
-            tabindex="0"
-            role="region"
-            aria-label="キャラクター画像を配置する二軸マップ"
-          >
+          <div id="mapComposition" class="map-composition">
             <div id="mapTitleDisplay" class="map-title" hidden></div>
-            <div class="axis-line axis-horizontal" aria-hidden="true"></div>
-            <div class="axis-line axis-vertical" aria-hidden="true"></div>
             <div id="topAxisLabel" class="axis-label axis-label-top">善</div>
             <div id="bottomAxisLabel" class="axis-label axis-label-bottom">悪</div>
             <div id="leftAxisLabel" class="axis-label axis-label-left">混沌</div>
             <div id="rightAxisLabel" class="axis-label axis-label-right">秩序</div>
 
-            <div id="mapEmptyHint" class="map-empty-hint" aria-hidden="true">
-              <span class="map-empty-icon">＋</span>
-              <strong>画像を配置してみましょう</strong>
-              <small>左のサムネイルをクリック、またはここへドラッグ</small>
-            </div>
+            <div
+              id="mapStage"
+              class="map-stage"
+              tabindex="0"
+              role="region"
+              aria-label="キャラクター画像を配置する二軸マップ"
+            >
+              <div class="axis-line axis-horizontal" aria-hidden="true"></div>
+              <div class="axis-line axis-vertical" aria-hidden="true"></div>
 
-            <div id="placementLayer" class="placement-layer"></div>
+              <div id="mapEmptyHint" class="map-empty-hint" aria-hidden="true">
+                <span class="map-empty-icon">＋</span>
+                <strong>画像を配置してみましょう</strong>
+                <small>左のサムネイルをクリック、またはここへドラッグ</small>
+              </div>
+
+              <div id="placementLayer" class="placement-layer"></div>
+            </div>
           </div>
         </div>
 
