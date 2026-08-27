@@ -1,0 +1,12 @@
+# Codexのローカル作業情報
+.agents/
+.codex/
+
+# OSが生成するファイル
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ローカル確認用ログ
+*.log
+.test-server*

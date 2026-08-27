@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="画像をドラッグして、自由な二軸のキャラクター属性マップを作れるブラウザツールです。"
+    />
+    <meta name="theme-color" content="#f2f5f4" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:site_name" content="キャラ属性メーカー" />
+    <meta property="og:title" content="キャラ属性メーカー" />
+    <meta
+      property="og:description"
+      content="画像をドラッグして、自由な二軸のキャラクター属性マップを作れるブラウザツールです。"
+    />
+    <meta name="twitter:card" content="summary" />
+    <title>キャラ属性メーカー</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#mainContent">メインコンテンツへ移動</a>
+
+    <header class="site-header">
+      <div class="brand-block">
+        <div class="brand-mark" aria-hidden="true">＋</div>
+        <div>
+          <h1>キャラ属性メーカー</h1>
+          <p>画像をドラッグして、キャラクターの属性マップを作ろう</p>
+        </div>
+      </div>
+
+      <div class="header-actions" aria-label="編集操作">
+        <button
+          id="undoButton"
+          class="button button-secondary button-compact"
+          type="button"
+          aria-label="元に戻す（Ctrl＋Z）"
+          title="元に戻す（Ctrl＋Z）"
+          disabled
+        >
+          <span aria-hidden="true">↶</span> 元に戻す
+        </button>
+        <button
+          id="redoButton"
+          class="button button-secondary button-compact"
+          type="button"
+          aria-label="やり直す（Ctrl＋Shift＋Z または Ctrl＋Y）"
+          title="やり直す（Ctrl＋Shift＋Z / Ctrl＋Y）"
+          disabled
+        >
+          <span aria-hidden="true">↷</span> やり直す
+        </button>
+        <button id="resetButton" class="button button-quiet button-compact" type="button">
+          すべて初期化
+        </button>
+      </div>
+    </header>
+
+    <main id="mainContent" class="workspace">
+      <aside class="settings-panel" aria-label="マップ設定">
+        <section class="panel-section" aria-labelledby="axisHeading">
+          <div class="section-heading-row">
+            <div>
+              <p class="section-number" aria-hidden="true">01</p>
+              <h2 id="axisHeading">タイトルと軸ラベル</h2>
+            </div>
+            <span class="section-note">入力すると即時反映</span>
+          </div>
+
+          <label class="field field-full map-title-input">
+            <span>図のタイトル</span>
+            <input
+              id="mapTitleInput"
+              type="text"
+              maxlength="80"
+              placeholder="例：キャラクター属性マップ"
+              autocomplete="off"
+            />
+          </label>
+
+          <div class="axis-input-grid">
+            <label class="field">
+              <span>上</span>
+              <input id="topLabelInput" type="text" value="善" maxlength="80" autocomplete="off" />
+            </label>
+            <label class="field">
+              <span>下</span>
+              <input id="bottomLabelInput" type="text" value="悪" maxlength="80" autocomplete="off" />
+            </label>
+            <label class="field">
+              <span>左</span>
+              <input id="leftLabelInput" type="text" value="混沌" maxlength="80" autocomplete="off" />
+            </label>
+            <label class="field">
+              <span>右</span>
+              <input id="rightLabelInput" type="text" value="秩序" maxlength="80" autocomplete="off" />
+            </label>
+          </div>
+        </section>
+
+        <section class="panel-section" aria-labelledby="imageHeading">
+          <div class="section-heading-row">
+            <div>
+              <p class="section-number" aria-hidden="true">02</p>
+              <h2 id="imageHeading">画像を追加</h2>
+            </div>
+            <span id="imageCount" class="count-badge">0枚</span>
+          </div>
+
+          <div id="dropZone" class="drop-zone">
+            <div class="drop-zone-icon" aria-hidden="true">＋</div>
+            <p><strong>画像をここにドロップ</strong></p>
+            <p>または</p>
+            <button id="chooseFilesButton" class="button button-secondary" type="button">
+              ファイルを選択
+            </button>
+            <input
+              id="fileInput"
+              class="visually-hidden"
+              type="file"
+              aria-label="画像ファイルを選択"
+              tabindex="-1"
+              accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
+              multiple
+            />
+            <small>PNG・JPEG・WebP／複数選択できます</small>
+          </div>
+
+          <div id="libraryEmpty" class="library-empty">
+            追加した画像がここに並びます。クリックするとマップ中央へ配置できます。
+          </div>
+          <div
+            id="imageLibrary"
+            class="image-library"
+            role="list"
+            aria-label="アップロードした画像"
+          ></div>
+        </section>
+
+        <section class="panel-section" aria-labelledby="characterHeading">
+          <div class="section-heading-row">
+            <div>
+              <p class="section-number" aria-hidden="true">03</p>
+              <h2 id="characterHeading">選択中のキャラクター</h2>
+            </div>
+          </div>
+
+          <p id="selectionEmpty" class="selection-empty">
+            マップ上の画像を選ぶと、名前や見た目を編集できます。
+          </p>
+
+          <fieldset id="characterSettings" class="character-settings" hidden>
+            <legend class="visually-hidden">選択中のキャラクター設定</legend>
+
+            <label class="field field-full">
+              <span>キャラクター名</span>
+              <input
+                id="characterNameInput"
+                type="text"
+                maxlength="60"
+                placeholder="未入力の場合は表示しません"
+                autocomplete="off"
+              />
+            </label>
+
+            <div class="field field-full">
+              <div class="range-label-row">
+                <label for="characterSizeInput">画像サイズ</label>
+                <output id="characterSizeOutput" for="characterSizeInput">112 px</output>
+              </div>
+              <input id="characterSizeInput" type="range" min="64" max="240" step="1" value="112" />
+            </div>
+
+            <div class="two-column-fields">
+              <label class="field color-field">
+                <span>枠色</span>
+                <span class="color-control">
+                  <input id="borderColorInput" type="color" value="#ffffff" />
+                  <span id="borderColorValue">#FFFFFF</span>
+                </span>
+              </label>
+              <label class="field">
+                <span>枠の太さ</span>
+                <select id="borderWidthInput">
+                  <option value="0">なし</option>
+                  <option value="1">1 px</option>
+                  <option value="2">2 px</option>
+                  <option value="3" selected>3 px</option>
+                  <option value="4">4 px</option>
+                  <option value="6">6 px</option>
+                  <option value="8">8 px</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="field field-full">
+              <span id="shapeLabel">切り抜き形状</span>
+              <div class="segmented-control" role="group" aria-labelledby="shapeLabel">
+                <button id="squareShapeButton" type="button" aria-pressed="true">四角形</button>
+                <button id="circleShapeButton" type="button" aria-pressed="false">円形</button>
+              </div>
+            </div>
+
+            <label class="switch-row">
+              <span>
+                <strong>名前を表示</strong>
+                <small>画像の下に小さく表示します</small>
+              </span>
+              <input id="showNameInput" type="checkbox" checked />
+              <span class="switch" aria-hidden="true"></span>
+            </label>
+
+            <div class="character-action-grid">
+              <button id="duplicateButton" class="button button-secondary" type="button">複製</button>
+              <button id="deleteButton" class="button button-danger" type="button">削除</button>
+            </div>
+          </fieldset>
+        </section>
+
+        <section class="panel-section" aria-labelledby="appearanceHeading">
+          <div class="section-heading-row">
+            <div>
+              <p class="section-number" aria-hidden="true">04</p>
+              <h2 id="appearanceHeading">背景とカラー</h2>
+            </div>
+          </div>
+
+          <div class="preset-list" aria-label="背景プリセット">
+            <button class="preset-swatch is-active" type="button" data-preset="white" aria-pressed="true">
+              <span class="swatch swatch-white" aria-hidden="true"></span>
+              シンプル白
+            </button>
+            <button class="preset-swatch" type="button" data-preset="beige" aria-pressed="false">
+              <span class="swatch swatch-beige" aria-hidden="true"></span>
+              ベージュ
+            </button>
+            <button class="preset-swatch" type="button" data-preset="blue" aria-pressed="false">
+              <span class="swatch swatch-blue" aria-hidden="true"></span>
+              淡いブルー
+            </button>
+            <button class="preset-swatch" type="button" data-preset="green" aria-pressed="false">
+              <span class="swatch swatch-green" aria-hidden="true"></span>
+              淡いグリーン
+            </button>
+            <button class="preset-swatch" type="button" data-preset="gradient" aria-pressed="false">
+              <span class="swatch swatch-gradient" aria-hidden="true"></span>
+              グラデーション
+            </button>
+          </div>
+
+          <div class="appearance-group">
+            <h3>背景</h3>
+            <label class="field field-full">
+              <span>塗り方</span>
+              <select id="backgroundModeInput">
+                <option value="solid">単色</option>
+                <option value="gradient">2色グラデーション</option>
+                <option value="image">画像</option>
+                <option value="transparent">透過</option>
+              </select>
+            </label>
+
+            <div id="backgroundSolidFields" class="appearance-color-fields">
+              <label class="field color-field">
+                <span>背景色</span>
+                <span class="color-control">
+                  <input id="backgroundColorInput" type="color" value="#fffdf8" />
+                  <span id="backgroundColorValue">#FFFDF8</span>
+                </span>
+              </label>
+            </div>
+
+            <div id="backgroundGradientFields" class="appearance-color-fields color-pair" hidden>
+              <label class="field color-field">
+                <span>開始色（左上）</span>
+                <span class="color-control">
+                  <input id="gradientStartInput" type="color" value="#fff4cf" />
+                  <span id="gradientStartValue">#FFF4CF</span>
+                </span>
+              </label>
+              <label class="field color-field">
+                <span>終了色（右下）</span>
+                <span class="color-control">
+                  <input id="gradientEndInput" type="color" value="#d9eff2" />
+                  <span id="gradientEndValue">#D9EFF2</span>
+                </span>
+              </label>
+            </div>
+
+            <div id="backgroundImageFields" class="background-image-fields" hidden>
+              <input
+                id="backgroundImageInput"
+                class="visually-hidden"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
+                aria-label="背景画像ファイルを選択"
+              />
+              <button
+                id="chooseBackgroundImageButton"
+                class="button button-secondary"
+                type="button"
+              >
+                背景画像を選択
+              </button>
+              <p id="backgroundImageEmpty" class="appearance-note">
+                PNG・JPEG・WebPに対応。中央合わせでマップ全体に表示します。
+              </p>
+              <div id="backgroundImagePreview" class="background-image-preview" hidden>
+                <img id="backgroundImageThumbnail" alt="" />
+                <div class="background-image-copy">
+                  <strong id="backgroundImageName"></strong>
+                  <small>マップに合わせて中央から切り抜きます</small>
+                </div>
+                <button
+                  id="removeBackgroundImageButton"
+                  class="button button-quiet background-image-remove"
+                  type="button"
+                  aria-label="背景画像を削除"
+                >
+                  削除
+                </button>
+              </div>
+            </div>
+
+            <p id="backgroundTransparentHint" class="appearance-note transparent-note" hidden>
+              市松模様は編集時の目印です。PNGには透明な背景として保存されます。
+            </p>
+          </div>
+
+          <div class="appearance-group">
+            <h3>軸線</h3>
+            <label class="field field-full">
+              <span>塗り方</span>
+              <select id="axisModeInput">
+                <option value="solid">単色</option>
+                <option value="gradient">2色グラデーション</option>
+              </select>
+            </label>
+
+            <div id="axisSolidFields" class="appearance-color-fields">
+              <label class="field color-field">
+                <span>軸線の色</span>
+                <span class="color-control">
+                  <input id="axisColorInput" type="color" value="#71827c" />
+                  <span id="axisColorValue">#71827C</span>
+                </span>
+              </label>
+            </div>
+
+            <div id="axisGradientFields" class="appearance-color-fields color-pair" hidden>
+              <label class="field color-field">
+                <span>開始色（左・上）</span>
+                <span class="color-control">
+                  <input id="axisGradientStartInput" type="color" value="#71827c" />
+                  <span id="axisGradientStartValue">#71827C</span>
+                </span>
+              </label>
+              <label class="field color-field">
+                <span>終了色（右・下）</span>
+                <span class="color-control">
+                  <input id="axisGradientEndInput" type="color" value="#4e9f92" />
+                  <span id="axisGradientEndValue">#4E9F92</span>
+                </span>
+              </label>
+            </div>
+
+            <label class="field field-full">
+              <span class="range-label-row">
+                <span>軸線（矢印）の長さ</span>
+                <output id="axisLengthOutput" for="axisLengthInput">84%</output>
+              </span>
+              <input
+                id="axisLengthInput"
+                type="range"
+                min="50"
+                max="90"
+                step="2"
+                value="84"
+                aria-label="軸線（矢印）の長さ"
+                aria-describedby="axisLengthHelp"
+              />
+              <small id="axisLengthHelp" class="field-help">水平・垂直の軸を同じ長さで調整します</small>
+            </label>
+          </div>
+
+          <div class="appearance-group appearance-group-last">
+            <h3>文字</h3>
+            <label class="field field-full">
+              <span>マップ文字のフォント</span>
+              <select id="fontFamilyInput">
+                <option value="yu-gothic-ui">標準ゴシック（游ゴシック UI）</option>
+                <option value="yu-gothic">游ゴシック</option>
+                <option value="meiryo">メイリオ</option>
+                <option value="biz-ud-gothic">BIZ UDPゴシック</option>
+                <option value="ms-pgothic">MS Pゴシック</option>
+                <option value="rounded">丸ゴシック</option>
+                <option value="yu-mincho">游明朝</option>
+                <option value="biz-ud-mincho">BIZ UDP明朝</option>
+                <option value="ms-pmincho">MS P明朝</option>
+                <option value="monospace">等幅ゴシック</option>
+              </select>
+            </label>
+            <div class="appearance-color-fields">
+              <label class="field color-field">
+                <span>文字色</span>
+                <span class="color-control">
+                  <input id="textColorInput" type="color" value="#26332f" />
+                  <span id="textColorValue">#26332F</span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel-section export-section" aria-labelledby="exportHeading">
+          <div class="section-heading-row">
+            <div>
+              <p class="section-number" aria-hidden="true">05</p>
+              <h2 id="exportHeading">PNGで保存</h2>
+            </div>
+          </div>
+
+          <div class="export-options">
+            <label class="checkbox-row">
+              <input id="includeBackgroundInput" type="checkbox" checked />
+              <span>背景を含めて保存（オフで透過）</span>
+            </label>
+            <label class="field">
+              <span>出力サイズ</span>
+              <select id="exportScaleInput">
+                <option value="1">標準（800 × 800）</option>
+                <option value="2" selected>高解像度（1600 × 1600）</option>
+                <option value="3">最高解像度（2400 × 2400）</option>
+              </select>
+            </label>
+          </div>
+
+          <button id="exportButton" class="button button-primary button-large" type="button">
+            PNG画像を保存
+          </button>
+          <p class="privacy-note">
+            画像や配置内容はブラウザ内で一時的に処理されます。ページを閉じる前にPNGで保存してください。
+          </p>
+        </section>
+      </aside>
+
+      <section class="canvas-panel" aria-labelledby="mapHeading">
+        <div class="canvas-panel-header">
+          <div>
+            <p class="eyebrow">EDIT MAP</p>
+            <h2 id="mapHeading">属性マップ</h2>
+          </div>
+          <div class="map-help" aria-label="操作ヒント">
+            <span><kbd>ドラッグ</kbd> 移動</span>
+            <span><kbd>矢印</kbd> 微調整</span>
+            <span><kbd>Delete</kbd> 削除</span>
+          </div>
+        </div>
+
+        <div class="map-frame">
+          <div
+            id="mapStage"
+            class="map-stage"
+            tabindex="0"
+            role="region"
+            aria-label="キャラクター画像を配置する二軸マップ"
+          >
+            <div id="mapTitleDisplay" class="map-title" hidden></div>
+            <div class="axis-line axis-horizontal" aria-hidden="true"></div>
+            <div class="axis-line axis-vertical" aria-hidden="true"></div>
+            <div id="topAxisLabel" class="axis-label axis-label-top">善</div>
+            <div id="bottomAxisLabel" class="axis-label axis-label-bottom">悪</div>
+            <div id="leftAxisLabel" class="axis-label axis-label-left">混沌</div>
+            <div id="rightAxisLabel" class="axis-label axis-label-right">秩序</div>
+
+            <div id="mapEmptyHint" class="map-empty-hint" aria-hidden="true">
+              <span class="map-empty-icon">＋</span>
+              <strong>画像を配置してみましょう</strong>
+              <small>左のサムネイルをクリック、またはここへドラッグ</small>
+            </div>
+
+            <div id="placementLayer" class="placement-layer"></div>
+          </div>
+        </div>
+
+        <p id="selectionStatus" class="selection-status" aria-live="polite">
+          画像はまだ配置されていません。
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        お問い合わせ：
+        <a
+          href="https://tetoriapot.sakura.ne.jp/index.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          >TeToriapot<span class="visually-hidden">（外部サイトを新しいタブで開きます）</span></a
+        >
+      </p>
+      <p>アップロードした画像や配置内容は外部へ送信されません。</p>
+    </footer>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

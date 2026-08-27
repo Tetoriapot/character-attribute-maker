@@ -1,0 +1,1856 @@
+(() => {
+  "use strict";
+
+  const MAP_SIZE = 800;
+  const DEFAULT_CHARACTER_SIZE = 112;
+  const MIN_CHARACTER_SIZE = 64;
+  const MAX_CHARACTER_SIZE = 240;
+  const CAPTION_SPACE = 34;
+  const HISTORY_LIMIT = 60;
+  const PREFERENCES_KEY = "character-attribute-maker-preferences-v1";
+  const SUPPORTED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+  const SUPPORTED_EXTENSIONS = /\.(png|jpe?g|webp)$/i;
+  const BACKGROUND_MODES = new Set(["solid", "gradient", "image", "transparent"]);
+  const AXIS_LENGTH_MIN = 50;
+  const AXIS_LENGTH_MAX = 90;
+  const TRANSPARENCY_GRID =
+    "linear-gradient(45deg, #e4e9e7 25%, transparent 25%), " +
+    "linear-gradient(-45deg, #e4e9e7 25%, transparent 25%), " +
+    "linear-gradient(45deg, transparent 75%, #e4e9e7 75%), " +
+    "linear-gradient(-45deg, transparent 75%, #e4e9e7 75%)";
+
+  const FONT_OPTIONS = Object.freeze({
+    "yu-gothic-ui": '"Yu Gothic UI", "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif',
+    "yu-gothic": '"Yu Gothic", "Yu Gothic UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif',
+    meiryo: 'Meiryo, "Yu Gothic UI", "Hiragino Kaku Gothic ProN", sans-serif',
+    "biz-ud-gothic": '"BIZ UDPGothic", "Yu Gothic UI", Meiryo, sans-serif',
+    "ms-pgothic": '"MS PGothic", "Yu Gothic UI", Meiryo, sans-serif',
+    rounded: '"Hiragino Maru Gothic ProN", "Arial Rounded MT Bold", "Yu Gothic UI", Meiryo, sans-serif',
+    "yu-mincho": '"Yu Mincho", "Hiragino Mincho ProN", "MS PMincho", serif',
+    "biz-ud-mincho": '"BIZ UDPMincho", "Yu Mincho", "Hiragino Mincho ProN", serif',
+    "ms-pmincho": '"MS PMincho", "Yu Mincho", "Hiragino Mincho ProN", serif',
+    monospace: '"BIZ UDGothic", "MS Gothic", Consolas, monospace',
+  });
+
+  const PRESETS = {
+    white: {
+      backgroundMode: "solid",
+      backgroundColor: "#fffdf8",
+      gradientStart: "#fffdf8",
+      gradientEnd: "#fffdf8",
+    },
+    beige: {
+      backgroundMode: "solid",
+      backgroundColor: "#f7f0df",
+      gradientStart: "#f7f0df",
+      gradientEnd: "#f7f0df",
+    },
+    blue: {
+      backgroundMode: "solid",
+      backgroundColor: "#eef8fb",
+      gradientStart: "#eef8fb",
+      gradientEnd: "#eef8fb",
+    },
+    green: {
+      backgroundMode: "solid",
+      backgroundColor: "#eff8f2",
+      gradientStart: "#eff8f2",
+      gradientEnd: "#eff8f2",
+    },
+    gradient: {
+      backgroundMode: "gradient",
+      backgroundColor: "#fff4cf",
+      gradientStart: "#fff4cf",
+      gradientEnd: "#d9eff2",
+    },
+  };
+
+  const dom = {
+    undoButton: document.querySelector("#undoButton"),
+    redoButton: document.querySelector("#redoButton"),
+    resetButton: document.querySelector("#resetButton"),
+    mapTitleInput: document.querySelector("#mapTitleInput"),
+    mapTitleDisplay: document.querySelector("#mapTitleDisplay"),
+    topLabelInput: document.querySelector("#topLabelInput"),
+    bottomLabelInput: document.querySelector("#bottomLabelInput"),
+    leftLabelInput: document.querySelector("#leftLabelInput"),
+    rightLabelInput: document.querySelector("#rightLabelInput"),
+    topAxisLabel: document.querySelector("#topAxisLabel"),
+    bottomAxisLabel: document.querySelector("#bottomAxisLabel"),
+    leftAxisLabel: document.querySelector("#leftAxisLabel"),
+    rightAxisLabel: document.querySelector("#rightAxisLabel"),
+    chooseFilesButton: document.querySelector("#chooseFilesButton"),
+    fileInput: document.querySelector("#fileInput"),
+    dropZone: document.querySelector("#dropZone"),
+    imageLibrary: document.querySelector("#imageLibrary"),
+    libraryEmpty: document.querySelector("#libraryEmpty"),
+    imageCount: document.querySelector("#imageCount"),
+    selectionEmpty: document.querySelector("#selectionEmpty"),
+    characterSettings: document.querySelector("#characterSettings"),
+    characterNameInput: document.querySelector("#characterNameInput"),
+    characterSizeInput: document.querySelector("#characterSizeInput"),
+    characterSizeOutput: document.querySelector("#characterSizeOutput"),
+    borderColorInput: document.querySelector("#borderColorInput"),
+    borderColorValue: document.querySelector("#borderColorValue"),
+    borderWidthInput: document.querySelector("#borderWidthInput"),
+    squareShapeButton: document.querySelector("#squareShapeButton"),
+    circleShapeButton: document.querySelector("#circleShapeButton"),
+    showNameInput: document.querySelector("#showNameInput"),
+    duplicateButton: document.querySelector("#duplicateButton"),
+    deleteButton: document.querySelector("#deleteButton"),
+    backgroundModeInput: document.querySelector("#backgroundModeInput"),
+    backgroundSolidFields: document.querySelector("#backgroundSolidFields"),
+    backgroundGradientFields: document.querySelector("#backgroundGradientFields"),
+    backgroundColorInput: document.querySelector("#backgroundColorInput"),
+    backgroundColorValue: document.querySelector("#backgroundColorValue"),
+    gradientStartInput: document.querySelector("#gradientStartInput"),
+    gradientStartValue: document.querySelector("#gradientStartValue"),
+    gradientEndInput: document.querySelector("#gradientEndInput"),
+    gradientEndValue: document.querySelector("#gradientEndValue"),
+    backgroundImageFields: document.querySelector("#backgroundImageFields"),
+    backgroundImageInput: document.querySelector("#backgroundImageInput"),
+    chooseBackgroundImageButton: document.querySelector("#chooseBackgroundImageButton"),
+    backgroundImageEmpty: document.querySelector("#backgroundImageEmpty"),
+    backgroundImagePreview: document.querySelector("#backgroundImagePreview"),
+    backgroundImageThumbnail: document.querySelector("#backgroundImageThumbnail"),
+    backgroundImageName: document.querySelector("#backgroundImageName"),
+    removeBackgroundImageButton: document.querySelector("#removeBackgroundImageButton"),
+    backgroundTransparentHint: document.querySelector("#backgroundTransparentHint"),
+    axisModeInput: document.querySelector("#axisModeInput"),
+    axisSolidFields: document.querySelector("#axisSolidFields"),
+    axisGradientFields: document.querySelector("#axisGradientFields"),
+    axisColorInput: document.querySelector("#axisColorInput"),
+    axisColorValue: document.querySelector("#axisColorValue"),
+    axisGradientStartInput: document.querySelector("#axisGradientStartInput"),
+    axisGradientStartValue: document.querySelector("#axisGradientStartValue"),
+    axisGradientEndInput: document.querySelector("#axisGradientEndInput"),
+    axisGradientEndValue: document.querySelector("#axisGradientEndValue"),
+    axisLengthInput: document.querySelector("#axisLengthInput"),
+    axisLengthOutput: document.querySelector("#axisLengthOutput"),
+    fontFamilyInput: document.querySelector("#fontFamilyInput"),
+    textColorInput: document.querySelector("#textColorInput"),
+    textColorValue: document.querySelector("#textColorValue"),
+    includeBackgroundInput: document.querySelector("#includeBackgroundInput"),
+    exportScaleInput: document.querySelector("#exportScaleInput"),
+    exportButton: document.querySelector("#exportButton"),
+    mapStage: document.querySelector("#mapStage"),
+    placementLayer: document.querySelector("#placementLayer"),
+    mapEmptyHint: document.querySelector("#mapEmptyHint"),
+    selectionStatus: document.querySelector("#selectionStatus"),
+    toast: document.querySelector("#toast"),
+    presetButtons: Array.from(document.querySelectorAll("[data-preset]")),
+  };
+
+  const assets = new Map();
+  const undoStack = [];
+  const redoStack = [];
+
+  let state = createDefaultState();
+  let selectedId = null;
+  let idCounter = 0;
+  let interaction = null;
+  let pendingEdit = null;
+  let toastTimer = 0;
+  let preferenceTimer = 0;
+  let resetEpoch = 0;
+  let backgroundLoadRequest = 0;
+
+  function createDefaultState() {
+    return {
+      mapTitle: "",
+      backgroundAssetId: null,
+      axis: {
+        top: "善",
+        bottom: "悪",
+        left: "混沌",
+        right: "秩序",
+      },
+      appearance: {
+        backgroundMode: "solid",
+        backgroundColor: "#fffdf8",
+        gradientStart: "#fff4cf",
+        gradientEnd: "#d9eff2",
+        axisMode: "solid",
+        axisColor: "#71827c",
+        axisGradientStart: "#71827c",
+        axisGradientEnd: "#4e9f92",
+        axisLength: 84,
+        textColor: "#26332f",
+        fontFamily: "yu-gothic-ui",
+        activePreset: "white",
+      },
+      libraryIds: [],
+      placements: [],
+    };
+  }
+
+  function loadPreferences() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || "null");
+      if (!saved || typeof saved !== "object") return;
+
+      if (typeof saved.mapTitle === "string") {
+        state.mapTitle = saved.mapTitle.slice(0, 80);
+      }
+
+      for (const key of ["top", "bottom", "left", "right"]) {
+        if (typeof saved.axis?.[key] === "string") {
+          state.axis[key] = saved.axis[key].slice(0, 80);
+        }
+      }
+
+      const appearance = saved.appearance || {};
+      if (BACKGROUND_MODES.has(appearance.backgroundMode) && appearance.backgroundMode !== "image") {
+        state.appearance.backgroundMode = appearance.backgroundMode;
+      }
+      if (appearance.axisMode === "solid" || appearance.axisMode === "gradient") {
+        state.appearance.axisMode = appearance.axisMode;
+      }
+      for (const key of [
+        "backgroundColor",
+        "gradientStart",
+        "gradientEnd",
+        "axisColor",
+        "axisGradientStart",
+        "axisGradientEnd",
+        "textColor",
+      ]) {
+        if (isHexColor(appearance[key])) state.appearance[key] = appearance[key].toLowerCase();
+      }
+      const axisLength = Number(appearance.axisLength);
+      if (Number.isFinite(axisLength)) {
+        state.appearance.axisLength = clamp(
+          Math.round(axisLength),
+          AXIS_LENGTH_MIN,
+          AXIS_LENGTH_MAX,
+        );
+      }
+      if (isFontOption(appearance.fontFamily)) {
+        state.appearance.fontFamily = appearance.fontFamily;
+      }
+      if (typeof appearance.activePreset === "string") {
+        state.appearance.activePreset = appearance.activePreset;
+      }
+    } catch {
+      // Preferences are optional. Invalid or unavailable storage should never block the app.
+    }
+  }
+
+  function savePreferencesSoon() {
+    window.clearTimeout(preferenceTimer);
+    preferenceTimer = window.setTimeout(savePreferences, 180);
+  }
+
+  function savePreferences() {
+    try {
+      const appearance = {
+        ...state.appearance,
+        backgroundMode:
+          state.appearance.backgroundMode === "image" ? "solid" : state.appearance.backgroundMode,
+      };
+      localStorage.setItem(
+        PREFERENCES_KEY,
+        JSON.stringify({
+          mapTitle: state.mapTitle,
+          axis: state.axis,
+          appearance,
+        }),
+      );
+    } catch {
+      // Storage may be disabled or full. Images and placements are intentionally not stored.
+    }
+  }
+
+  function isHexColor(value) {
+    return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
+  }
+
+  function isFontOption(value) {
+    return typeof value === "string" && Object.prototype.hasOwnProperty.call(FONT_OPTIONS, value);
+  }
+
+  function nextId(prefix) {
+    idCounter += 1;
+    return `${prefix}-${Date.now().toString(36)}-${idCounter.toString(36)}`;
+  }
+
+  function cloneData(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function captureSnapshot() {
+    return cloneData(state);
+  }
+
+  function snapshotSignature(snapshot) {
+    return JSON.stringify(snapshot);
+  }
+
+  function commitBefore(before) {
+    if (!before || snapshotSignature(before) === snapshotSignature(state)) return false;
+    undoStack.push(before);
+    if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
+    redoStack.length = 0;
+    pruneUnusedAssets();
+    updateHistoryButtons();
+    savePreferencesSoon();
+    return true;
+  }
+
+  function pruneUnusedAssets() {
+    const referencedIds = new Set();
+    const collect = (snapshot) => {
+      for (const id of snapshot.libraryIds || []) referencedIds.add(id);
+      for (const placement of snapshot.placements || []) referencedIds.add(placement.assetId);
+      if (snapshot.backgroundAssetId) referencedIds.add(snapshot.backgroundAssetId);
+    };
+
+    collect(state);
+    undoStack.forEach(collect);
+    redoStack.forEach(collect);
+    for (const id of assets.keys()) {
+      if (!referencedIds.has(id)) assets.delete(id);
+    }
+  }
+
+  function restoreSnapshot(snapshot) {
+    state = cloneData(snapshot);
+    state.libraryIds = state.libraryIds.filter((id) => assets.has(id));
+    state.placements = state.placements.filter((placement) => assets.has(placement.assetId));
+    if (!assets.has(state.backgroundAssetId)) state.backgroundAssetId = null;
+    if (state.appearance.backgroundMode === "image" && !state.backgroundAssetId) {
+      state.appearance.backgroundMode = "solid";
+    }
+    if (!state.placements.some((placement) => placement.id === selectedId)) selectedId = null;
+    renderAll();
+    savePreferencesSoon();
+  }
+
+  function undo() {
+    finishPendingEdit();
+    const previous = undoStack.pop();
+    if (!previous) return;
+    redoStack.push(captureSnapshot());
+    restoreSnapshot(previous);
+    showToast("ひとつ前の状態に戻しました");
+  }
+
+  function redo() {
+    finishPendingEdit();
+    const next = redoStack.pop();
+    if (!next) return;
+    undoStack.push(captureSnapshot());
+    restoreSnapshot(next);
+    showToast("操作をやり直しました");
+  }
+
+  function beginPendingEdit(element) {
+    if (pendingEdit?.element === element) return;
+    finishPendingEdit();
+    pendingEdit = { element, before: captureSnapshot() };
+  }
+
+  function finishPendingEdit(element = null) {
+    if (!pendingEdit) return;
+    if (element && pendingEdit.element !== element) return;
+    const { before } = pendingEdit;
+    pendingEdit = null;
+    commitBefore(before);
+  }
+
+  function bindStatefulControl(element, apply, refresh, eventName = "input") {
+    const begin = () => beginPendingEdit(element);
+    element.addEventListener("focus", begin);
+    element.addEventListener("pointerdown", begin);
+    element.addEventListener(eventName, () => {
+      begin();
+      apply();
+      refresh();
+      if (eventName === "change") finishPendingEdit(element);
+    });
+    if (eventName !== "change") {
+      element.addEventListener("change", () => finishPendingEdit(element));
+    }
+    element.addEventListener("blur", () => finishPendingEdit(element));
+  }
+
+  function getSelectedPlacement() {
+    return state.placements.find((placement) => placement.id === selectedId) || null;
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+  }
+
+  function captionIsVisible(placement) {
+    return placement.showName && Boolean(placement.name.trim());
+  }
+
+  function constrainPlacement(placement) {
+    placement.size = clamp(Math.round(placement.size), MIN_CHARACTER_SIZE, MAX_CHARACTER_SIZE);
+    const extraHeight = captionIsVisible(placement) ? CAPTION_SPACE : 0;
+    placement.x = clamp(placement.x, 0, MAP_SIZE - placement.size);
+    placement.y = clamp(placement.y, 0, MAP_SIZE - placement.size - extraHeight);
+    placement.x = Math.round(placement.x * 10) / 10;
+    placement.y = Math.round(placement.y * 10) / 10;
+    return placement;
+  }
+
+  function createPlacement(assetId, x, y) {
+    return constrainPlacement({
+      id: nextId("placement"),
+      assetId,
+      x,
+      y,
+      size: DEFAULT_CHARACTER_SIZE,
+      name: "",
+      borderColor: "#ffffff",
+      borderWidth: 3,
+      shape: "square",
+      showName: true,
+    });
+  }
+
+  function suggestedPlacementPosition(index = state.placements.length) {
+    const offsets = [
+      [0, 0],
+      [-72, -52],
+      [78, 54],
+      [82, -70],
+      [-88, 74],
+      [0, 104],
+      [-116, 4],
+      [116, 4],
+    ];
+    const [offsetX, offsetY] = offsets[index % offsets.length];
+    return {
+      x: MAP_SIZE / 2 - DEFAULT_CHARACTER_SIZE / 2 + offsetX,
+      y: MAP_SIZE / 2 - DEFAULT_CHARACTER_SIZE / 2 + offsetY,
+    };
+  }
+
+  function addPlacement(assetId, position = null, before = null) {
+    if (!assets.has(assetId)) return null;
+    const snapshot = before || captureSnapshot();
+    const point = position || suggestedPlacementPosition();
+    const placement = createPlacement(
+      assetId,
+      point.x - (position ? DEFAULT_CHARACTER_SIZE / 2 : 0),
+      point.y - (position ? DEFAULT_CHARACTER_SIZE / 2 : 0),
+    );
+    state.placements.push(placement);
+    selectedId = placement.id;
+    commitBefore(snapshot);
+    renderAll();
+    const node = dom.placementLayer.querySelector(`[data-placement-id="${placement.id}"]`);
+    node?.focus({ preventScroll: true });
+    return placement;
+  }
+
+  function addPlacementWithoutCommit(assetId, position, offsetIndex = 0) {
+    if (!assets.has(assetId)) return null;
+    const base = position || suggestedPlacementPosition(state.placements.length + offsetIndex);
+    const placement = createPlacement(
+      assetId,
+      base.x - (position ? DEFAULT_CHARACTER_SIZE / 2 : 0) + offsetIndex * 16,
+      base.y - (position ? DEFAULT_CHARACTER_SIZE / 2 : 0) + offsetIndex * 16,
+    );
+    state.placements.push(placement);
+    selectedId = placement.id;
+    return placement;
+  }
+
+  function deleteSelected() {
+    const index = state.placements.findIndex((placement) => placement.id === selectedId);
+    if (index < 0) return;
+    const before = captureSnapshot();
+    state.placements.splice(index, 1);
+    selectedId = null;
+    commitBefore(before);
+    renderAll();
+    showToast("キャラクターを削除しました");
+  }
+
+  function duplicateSelected() {
+    const source = getSelectedPlacement();
+    if (!source) return;
+    const before = captureSnapshot();
+    const copy = cloneData(source);
+    copy.id = nextId("placement");
+    copy.x += 22;
+    copy.y += 22;
+    constrainPlacement(copy);
+    state.placements.push(copy);
+    selectedId = copy.id;
+    commitBefore(before);
+    renderAll();
+    const node = dom.placementLayer.querySelector(`[data-placement-id="${copy.id}"]`);
+    node?.focus({ preventScroll: true });
+    showToast("キャラクターを複製しました");
+  }
+
+  function selectPlacement(id, bringToFront = false, before = null) {
+    const index = state.placements.findIndex((placement) => placement.id === id);
+    if (index < 0) return;
+    selectedId = id;
+
+    if (bringToFront && index !== state.placements.length - 1) {
+      const placement = state.placements.splice(index, 1)[0];
+      state.placements.push(placement);
+      const node = dom.placementLayer.querySelector(`[data-placement-id="${id}"]`);
+      if (node) dom.placementLayer.append(node);
+      if (before) commitBefore(before);
+    }
+
+    updateSelectionVisuals();
+    syncCharacterSettings();
+    updateSelectionStatus();
+  }
+
+  function clearSelection() {
+    if (!selectedId) return;
+    selectedId = null;
+    updateSelectionVisuals();
+    syncCharacterSettings();
+    updateSelectionStatus();
+  }
+
+  async function handleFiles(fileList, options = {}) {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+
+    const validFiles = files.filter(
+      (file) => SUPPORTED_TYPES.has(file.type) || SUPPORTED_EXTENSIONS.test(file.name),
+    );
+    const rejectedCount = files.length - validFiles.length;
+    if (!validFiles.length) {
+      showToast("PNG・JPEG・WebPの画像を選んでください", true);
+      return;
+    }
+
+    const epoch = resetEpoch;
+    dom.chooseFilesButton.disabled = true;
+    dom.chooseFilesButton.textContent = "読み込み中…";
+
+    try {
+      const results = await Promise.allSettled(validFiles.map(readImageFile));
+      if (epoch !== resetEpoch) return;
+
+      const before = captureSnapshot();
+      const loadedAssets = [];
+      for (const result of results) {
+        if (result.status !== "fulfilled") continue;
+        const asset = result.value;
+        assets.set(asset.id, asset);
+        state.libraryIds.push(asset.id);
+        loadedAssets.push(asset);
+      }
+
+      if (options.placeAt && loadedAssets.length) {
+        loadedAssets.forEach((asset, index) => addPlacementWithoutCommit(asset.id, options.placeAt, index));
+      }
+
+      if (loadedAssets.length) {
+        commitBefore(before);
+        renderAll();
+        const suffix = rejectedCount || results.some((result) => result.status === "rejected")
+          ? "（読み込めないファイルは除外しました）"
+          : "";
+        showToast(`${loadedAssets.length}枚の画像を追加しました${suffix}`);
+      } else {
+        showToast("画像を読み込めませんでした。ファイルを確認してください", true);
+      }
+    } finally {
+      dom.chooseFilesButton.disabled = false;
+      dom.chooseFilesButton.textContent = "ファイルを選択";
+      dom.fileInput.value = "";
+    }
+  }
+
+  function readImageFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("ファイルを読み込めませんでした"));
+      reader.onload = () => {
+        const src = String(reader.result || "");
+        const image = new Image();
+        image.onload = () => {
+          resolve({
+            id: nextId("asset"),
+            src,
+            fileName: file.name || "画像",
+            width: image.naturalWidth,
+            height: image.naturalHeight,
+            image,
+          });
+        };
+        image.onerror = () => reject(new Error("画像をデコードできませんでした"));
+        image.src = src;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleBackgroundFile(fileList) {
+    const file = Array.from(fileList || [])[0];
+    if (!file) return;
+    if (!SUPPORTED_TYPES.has(file.type) && !SUPPORTED_EXTENSIONS.test(file.name)) {
+      dom.backgroundImageInput.value = "";
+      showToast("背景にはPNG・JPEG・WebPの画像を選んでください", true);
+      return;
+    }
+
+    const epoch = resetEpoch;
+    const requestId = ++backgroundLoadRequest;
+    dom.chooseBackgroundImageButton.disabled = true;
+    dom.removeBackgroundImageButton.disabled = true;
+    dom.chooseBackgroundImageButton.textContent = "読み込み中…";
+
+    try {
+      const asset = await readImageFile(file);
+      if (epoch !== resetEpoch || requestId !== backgroundLoadRequest) return;
+
+      const before = captureSnapshot();
+      assets.set(asset.id, asset);
+      state.backgroundAssetId = asset.id;
+      state.appearance.backgroundMode = "image";
+      state.appearance.activePreset = "custom";
+      commitBefore(before);
+      renderAppearance();
+      showToast(`背景画像「${asset.fileName}」を設定しました`);
+    } catch {
+      if (requestId === backgroundLoadRequest) {
+        showToast("背景画像を読み込めませんでした。ファイルを確認してください", true);
+      }
+    } finally {
+      if (requestId === backgroundLoadRequest) {
+        dom.chooseBackgroundImageButton.disabled = false;
+        dom.removeBackgroundImageButton.disabled = false;
+        dom.chooseBackgroundImageButton.textContent = "背景画像を選択";
+        dom.backgroundImageInput.value = "";
+      }
+    }
+  }
+
+  function removeBackgroundImage() {
+    if (!state.backgroundAssetId) return;
+    const before = captureSnapshot();
+    state.backgroundAssetId = null;
+    if (state.appearance.backgroundMode === "image") {
+      state.appearance.backgroundMode = "solid";
+    }
+    state.appearance.activePreset = "custom";
+    commitBefore(before);
+    renderAppearance();
+    showToast("背景画像を削除しました");
+  }
+
+  function renderAll() {
+    renderAxis();
+    renderAppearance();
+    renderLibrary();
+    renderPlacements();
+    syncCharacterSettings();
+    updateHistoryButtons();
+    updateSelectionStatus();
+    updateMapEmptyHint();
+  }
+
+  function renderAxis() {
+    const title = state.mapTitle.trim();
+    dom.mapTitleInput.value = state.mapTitle;
+    dom.mapTitleDisplay.textContent = title;
+    dom.mapTitleDisplay.hidden = !title;
+
+    const bindings = [
+      [dom.topLabelInput, dom.topAxisLabel, state.axis.top],
+      [dom.bottomLabelInput, dom.bottomAxisLabel, state.axis.bottom],
+      [dom.leftLabelInput, dom.leftAxisLabel, state.axis.left],
+      [dom.rightLabelInput, dom.rightAxisLabel, state.axis.right],
+    ];
+    for (const [input, label, value] of bindings) {
+      input.value = value;
+      label.textContent = value;
+    }
+  }
+
+  function getFontStack() {
+    return FONT_OPTIONS[state.appearance.fontFamily] || FONT_OPTIONS["yu-gothic-ui"];
+  }
+
+  function applyMapBackground() {
+    const { backgroundMode } = state.appearance;
+    const asset = assets.get(state.backgroundAssetId);
+    dom.mapStage.style.backgroundColor = "transparent";
+    dom.mapStage.style.backgroundImage = "none";
+    dom.mapStage.style.backgroundPosition = "center";
+    dom.mapStage.style.backgroundSize = "auto";
+    dom.mapStage.style.backgroundRepeat = "no-repeat";
+
+    if (backgroundMode === "solid") {
+      dom.mapStage.style.backgroundColor = state.appearance.backgroundColor;
+      return;
+    }
+
+    if (backgroundMode === "gradient") {
+      dom.mapStage.style.backgroundImage =
+        `linear-gradient(135deg, ${state.appearance.gradientStart}, ${state.appearance.gradientEnd})`;
+      dom.mapStage.style.backgroundSize = "cover";
+      return;
+    }
+
+    const imageLayer = backgroundMode === "image" && asset ? `url("${asset.src}"), ` : "";
+    dom.mapStage.style.backgroundColor = "#ffffff";
+    dom.mapStage.style.backgroundImage = `${imageLayer}${TRANSPARENCY_GRID}`;
+    dom.mapStage.style.backgroundPosition = imageLayer
+      ? "center, 0 0, 0 8px, 8px -8px, -8px 0"
+      : "0 0, 0 8px, 8px -8px, -8px 0";
+    dom.mapStage.style.backgroundSize = imageLayer
+      ? "cover, 16px 16px, 16px 16px, 16px 16px, 16px 16px"
+      : "16px 16px";
+    dom.mapStage.style.backgroundRepeat = imageLayer
+      ? "no-repeat, repeat, repeat, repeat, repeat"
+      : "repeat";
+  }
+
+  function getAxisColors() {
+    if (state.appearance.axisMode === "gradient") {
+      return {
+        start: state.appearance.axisGradientStart,
+        end: state.appearance.axisGradientEnd,
+      };
+    }
+    return {
+      start: state.appearance.axisColor,
+      end: state.appearance.axisColor,
+    };
+  }
+
+  function renderAppearance() {
+    const axisColors = getAxisColors();
+    const backgroundAsset = assets.get(state.backgroundAssetId);
+    const axisInset = (100 - state.appearance.axisLength) / 2;
+    applyMapBackground();
+    dom.mapStage.style.setProperty("--map-axis-color", state.appearance.axisColor);
+    dom.mapStage.style.setProperty("--map-axis-start-color", axisColors.start);
+    dom.mapStage.style.setProperty("--map-axis-end-color", axisColors.end);
+    dom.mapStage.style.setProperty(
+      "--map-axis-horizontal",
+      `linear-gradient(90deg, ${axisColors.start}, ${axisColors.end})`,
+    );
+    dom.mapStage.style.setProperty(
+      "--map-axis-vertical",
+      `linear-gradient(180deg, ${axisColors.start}, ${axisColors.end})`,
+    );
+    dom.mapStage.style.setProperty("--map-axis-inset", `${axisInset}%`);
+    dom.mapStage.style.setProperty("--map-text-color", state.appearance.textColor);
+    dom.mapStage.style.setProperty("--map-font-family", getFontStack());
+
+    dom.backgroundModeInput.value = state.appearance.backgroundMode;
+    dom.backgroundSolidFields.hidden = state.appearance.backgroundMode !== "solid";
+    dom.backgroundGradientFields.hidden = state.appearance.backgroundMode !== "gradient";
+    dom.backgroundImageFields.hidden = state.appearance.backgroundMode !== "image";
+    dom.backgroundTransparentHint.hidden = state.appearance.backgroundMode !== "transparent";
+    dom.backgroundImageEmpty.hidden = Boolean(backgroundAsset);
+    dom.backgroundImagePreview.hidden = !backgroundAsset;
+    if (backgroundAsset) dom.backgroundImageThumbnail.src = backgroundAsset.src;
+    else dom.backgroundImageThumbnail.removeAttribute("src");
+    dom.backgroundImageName.textContent = backgroundAsset?.fileName || "";
+    dom.removeBackgroundImageButton.disabled = !backgroundAsset;
+    dom.backgroundColorInput.value = state.appearance.backgroundColor;
+    dom.gradientStartInput.value = state.appearance.gradientStart;
+    dom.gradientEndInput.value = state.appearance.gradientEnd;
+    dom.axisModeInput.value = state.appearance.axisMode;
+    dom.axisSolidFields.hidden = state.appearance.axisMode !== "solid";
+    dom.axisGradientFields.hidden = state.appearance.axisMode !== "gradient";
+    dom.axisColorInput.value = state.appearance.axisColor;
+    dom.axisGradientStartInput.value = state.appearance.axisGradientStart;
+    dom.axisGradientEndInput.value = state.appearance.axisGradientEnd;
+    dom.axisLengthInput.value = String(state.appearance.axisLength);
+    dom.axisLengthOutput.textContent = `${state.appearance.axisLength}%`;
+    dom.fontFamilyInput.value = state.appearance.fontFamily;
+    dom.textColorInput.value = state.appearance.textColor;
+    dom.backgroundColorValue.textContent = state.appearance.backgroundColor.toUpperCase();
+    dom.gradientStartValue.textContent = state.appearance.gradientStart.toUpperCase();
+    dom.gradientEndValue.textContent = state.appearance.gradientEnd.toUpperCase();
+    dom.axisColorValue.textContent = state.appearance.axisColor.toUpperCase();
+    dom.axisGradientStartValue.textContent = state.appearance.axisGradientStart.toUpperCase();
+    dom.axisGradientEndValue.textContent = state.appearance.axisGradientEnd.toUpperCase();
+    dom.textColorValue.textContent = state.appearance.textColor.toUpperCase();
+    dom.includeBackgroundInput.disabled = state.appearance.backgroundMode === "transparent";
+    dom.includeBackgroundInput.closest(".checkbox-row")?.classList.toggle(
+      "is-disabled",
+      state.appearance.backgroundMode === "transparent",
+    );
+
+    for (const button of dom.presetButtons) {
+      const isActive = button.dataset.preset === state.appearance.activePreset;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-pressed", String(isActive));
+    }
+  }
+
+  function renderLibrary() {
+    dom.imageLibrary.textContent = "";
+    const fragment = document.createDocumentFragment();
+
+    for (const assetId of state.libraryIds) {
+      const asset = assets.get(assetId);
+      if (!asset) continue;
+
+      const item = document.createElement("div");
+      item.setAttribute("role", "listitem");
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "library-card";
+      button.draggable = true;
+      button.dataset.assetId = assetId;
+      button.title = `${asset.fileName}をマップへ配置`;
+      button.setAttribute("aria-label", `${asset.fileName}をマップへ配置`);
+
+      const image = document.createElement("img");
+      image.src = asset.src;
+      image.alt = "";
+      image.draggable = false;
+
+      const addMark = document.createElement("span");
+      addMark.className = "library-card-add";
+      addMark.textContent = "+";
+      addMark.setAttribute("aria-hidden", "true");
+
+      button.append(image, addMark);
+      item.append(button);
+      fragment.append(item);
+    }
+
+    dom.imageLibrary.append(fragment);
+    dom.libraryEmpty.hidden = state.libraryIds.length > 0;
+    dom.imageCount.textContent = `${state.libraryIds.length}枚`;
+  }
+
+  function getCaptionMetrics(placement) {
+    const characterCount = Array.from(placement.name.trim()).length;
+    const estimated = characterCount * 13 + 24;
+    const width = clamp(estimated, Math.min(72, placement.size), Math.min(180, MAP_SIZE - 8));
+    const centeredLeft = placement.x + placement.size / 2 - width / 2;
+    const left = clamp(centeredLeft, 4, MAP_SIZE - width - 4);
+    return { width, left };
+  }
+
+  function applyPlacementStyle(node, placement) {
+    node.style.left = `${(placement.x / MAP_SIZE) * 100}%`;
+    node.style.top = `${(placement.y / MAP_SIZE) * 100}%`;
+    node.style.width = `${(placement.size / MAP_SIZE) * 100}%`;
+    node.style.height = `${(placement.size / MAP_SIZE) * 100}%`;
+    node.classList.toggle("is-near-right", placement.x + placement.size >= MAP_SIZE - 18);
+    node.classList.toggle(
+      "is-near-bottom",
+      placement.y + placement.size + (captionIsVisible(placement) ? CAPTION_SPACE : 0) >= MAP_SIZE - 18,
+    );
+
+    const portrait = node.querySelector(".character-portrait");
+    portrait.style.borderColor = placement.borderColor;
+    portrait.style.borderWidth = `calc(${placement.borderWidth}px * var(--map-scale, 1))`;
+    portrait.classList.toggle("is-circle", placement.shape === "circle");
+
+    const caption = node.querySelector(".character-name");
+    const visible = captionIsVisible(placement);
+    caption.hidden = !visible;
+    caption.textContent = placement.name;
+    if (visible) {
+      const metrics = getCaptionMetrics(placement);
+      caption.style.left = `${((metrics.left - placement.x) / placement.size) * 100}%`;
+      caption.style.width = `${(metrics.width / placement.size) * 100}%`;
+    }
+  }
+
+  function renderPlacements() {
+    dom.placementLayer.textContent = "";
+    const fragment = document.createDocumentFragment();
+
+    for (const placement of state.placements) {
+      const asset = assets.get(placement.assetId);
+      if (!asset) continue;
+
+      const node = document.createElement("div");
+      node.className = "character-node";
+      node.dataset.placementId = placement.id;
+      node.tabIndex = 0;
+      node.setAttribute("role", "button");
+      node.setAttribute("aria-pressed", String(placement.id === selectedId));
+      node.setAttribute(
+        "aria-label",
+        `${placement.name.trim() || asset.fileName}。ドラッグで移動、矢印キーで微調整`,
+      );
+
+      const portrait = document.createElement("div");
+      portrait.className = "character-portrait";
+
+      const image = document.createElement("img");
+      image.src = asset.src;
+      image.alt = "";
+      image.draggable = false;
+      portrait.append(image);
+
+      const caption = document.createElement("span");
+      caption.className = "character-name";
+
+      const handle = document.createElement("span");
+      handle.className = "resize-handle";
+      handle.dataset.resizeHandle = "true";
+      handle.setAttribute("aria-hidden", "true");
+
+      node.append(portrait, caption, handle);
+      node.classList.toggle("is-selected", placement.id === selectedId);
+      applyPlacementStyle(node, placement);
+      fragment.append(node);
+    }
+
+    dom.placementLayer.append(fragment);
+    updateMapEmptyHint();
+  }
+
+  function updateSelectionVisuals() {
+    for (const node of dom.placementLayer.querySelectorAll(".character-node")) {
+      const selected = node.dataset.placementId === selectedId;
+      node.classList.toggle("is-selected", selected);
+      node.setAttribute("aria-pressed", String(selected));
+    }
+  }
+
+  function syncCharacterSettings() {
+    const placement = getSelectedPlacement();
+    const hasSelection = Boolean(placement);
+    dom.selectionEmpty.hidden = hasSelection;
+    dom.characterSettings.hidden = !hasSelection;
+    if (!placement) return;
+
+    dom.characterNameInput.value = placement.name;
+    dom.characterSizeInput.value = String(placement.size);
+    dom.characterSizeOutput.textContent = `${placement.size} px`;
+    dom.borderColorInput.value = placement.borderColor;
+    dom.borderColorValue.textContent = placement.borderColor.toUpperCase();
+    dom.borderWidthInput.value = String(placement.borderWidth);
+    dom.showNameInput.checked = placement.showName;
+    dom.squareShapeButton.setAttribute("aria-pressed", String(placement.shape === "square"));
+    dom.circleShapeButton.setAttribute("aria-pressed", String(placement.shape === "circle"));
+  }
+
+  function updateHistoryButtons() {
+    dom.undoButton.disabled = undoStack.length === 0;
+    dom.redoButton.disabled = redoStack.length === 0;
+  }
+
+  function updateMapEmptyHint() {
+    dom.mapEmptyHint.hidden = state.placements.length > 0;
+  }
+
+  function updateSelectionStatus() {
+    const placement = getSelectedPlacement();
+    if (!state.placements.length) {
+      dom.selectionStatus.textContent = "画像はまだ配置されていません。";
+      return;
+    }
+    if (!placement) {
+      dom.selectionStatus.textContent = `${state.placements.length}枚を配置中。画像を選ぶと編集できます。`;
+      return;
+    }
+    const asset = assets.get(placement.assetId);
+    const label = placement.name.trim() || asset?.fileName || "キャラクター";
+    dom.selectionStatus.textContent = `「${label}」を選択中 — 右下のハンドルでもサイズを変えられます。`;
+  }
+
+  function showToast(message, isError = false) {
+    window.clearTimeout(toastTimer);
+    dom.toast.textContent = message;
+    dom.toast.classList.toggle("is-error", isError);
+    dom.toast.classList.add("is-visible");
+    toastTimer = window.setTimeout(() => dom.toast.classList.remove("is-visible"), 2600);
+  }
+
+  function pointOnMap(event) {
+    const rect = dom.mapStage.getBoundingClientRect();
+    return {
+      x: ((event.clientX - rect.left) / rect.width) * MAP_SIZE,
+      y: ((event.clientY - rect.top) / rect.height) * MAP_SIZE,
+    };
+  }
+
+  function updateNodeForPlacement(placement) {
+    const node = dom.placementLayer.querySelector(`[data-placement-id="${placement.id}"]`);
+    if (node) applyPlacementStyle(node, placement);
+  }
+
+  function handlePointerDown(event) {
+    const node = event.target.closest(".character-node");
+    if (!node || !dom.mapStage.contains(node)) {
+      clearSelection();
+      return;
+    }
+
+    const placement = state.placements.find((item) => item.id === node.dataset.placementId);
+    if (!placement) return;
+
+    event.preventDefault();
+    finishPendingEdit();
+    node.focus({ preventScroll: true });
+    const before = captureSnapshot();
+    const index = state.placements.indexOf(placement);
+    if (index !== state.placements.length - 1) {
+      state.placements.splice(index, 1);
+      state.placements.push(placement);
+      dom.placementLayer.append(node);
+    }
+    selectedId = placement.id;
+    updateSelectionVisuals();
+    syncCharacterSettings();
+    updateSelectionStatus();
+
+    const point = pointOnMap(event);
+    const isResize = Boolean(event.target.closest("[data-resize-handle]"));
+    const captureTarget = isResize ? event.target.closest("[data-resize-handle]") : node;
+    captureTarget.setPointerCapture(event.pointerId);
+
+    interaction = isResize
+      ? {
+          type: "resize",
+          pointerId: event.pointerId,
+          target: captureTarget,
+          placementId: placement.id,
+          before,
+        }
+      : {
+          type: "move",
+          pointerId: event.pointerId,
+          target: captureTarget,
+          placementId: placement.id,
+          before,
+          offsetX: point.x - placement.x,
+          offsetY: point.y - placement.y,
+        };
+  }
+
+  function handlePointerMove(event) {
+    if (!interaction || interaction.pointerId !== event.pointerId) return;
+    const placement = state.placements.find((item) => item.id === interaction.placementId);
+    if (!placement) return;
+
+    event.preventDefault();
+    const point = pointOnMap(event);
+
+    if (interaction.type === "move") {
+      placement.x = point.x - interaction.offsetX;
+      placement.y = point.y - interaction.offsetY;
+      constrainPlacement(placement);
+    } else {
+      const extraHeight = captionIsVisible(placement) ? CAPTION_SPACE : 0;
+      const available = Math.min(
+        MAX_CHARACTER_SIZE,
+        MAP_SIZE - placement.x,
+        MAP_SIZE - placement.y - extraHeight,
+      );
+      const desired = Math.max(point.x - placement.x, point.y - placement.y);
+      placement.size = clamp(Math.round(desired), MIN_CHARACTER_SIZE, Math.max(MIN_CHARACTER_SIZE, available));
+      constrainPlacement(placement);
+      dom.characterSizeInput.value = String(placement.size);
+      dom.characterSizeOutput.textContent = `${placement.size} px`;
+    }
+
+    updateNodeForPlacement(placement);
+  }
+
+  function finishPointerInteraction(event) {
+    if (!interaction || interaction.pointerId !== event.pointerId) return;
+    const finished = interaction;
+    interaction = null;
+    if (finished.target.hasPointerCapture?.(event.pointerId)) {
+      finished.target.releasePointerCapture(event.pointerId);
+    }
+    commitBefore(finished.before);
+    renderAll();
+  }
+
+  function moveSelectedByKeyboard(key, amount) {
+    const placement = getSelectedPlacement();
+    if (!placement) return;
+    const before = captureSnapshot();
+    if (key === "ArrowLeft") placement.x -= amount;
+    if (key === "ArrowRight") placement.x += amount;
+    if (key === "ArrowUp") placement.y -= amount;
+    if (key === "ArrowDown") placement.y += amount;
+    constrainPlacement(placement);
+    commitBefore(before);
+    updateNodeForPlacement(placement);
+    syncCharacterSettings();
+    updateSelectionStatus();
+  }
+
+  function isTypingTarget(target) {
+    return (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement ||
+      target instanceof HTMLButtonElement ||
+      target?.isContentEditable
+    );
+  }
+
+  function handleKeyboard(event) {
+    const typing = isTypingTarget(event.target);
+    const modifier = event.ctrlKey || event.metaKey;
+
+    if (modifier && !typing) {
+      const key = event.key.toLowerCase();
+      if (key === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redo();
+        else undo();
+        return;
+      }
+      if (key === "y") {
+        event.preventDefault();
+        redo();
+        return;
+      }
+    }
+
+    if (typing) return;
+
+    const focusedNode = event.target.closest?.(".character-node");
+    if (focusedNode && (event.key === "Enter" || event.key === " ")) {
+      event.preventDefault();
+      const before = captureSnapshot();
+      selectPlacement(focusedNode.dataset.placementId, true, before);
+      return;
+    }
+
+    if ((event.key === "Delete" || event.key === "Backspace") && selectedId) {
+      event.preventDefault();
+      deleteSelected();
+      return;
+    }
+
+    if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key) && selectedId) {
+      event.preventDefault();
+      moveSelectedByKeyboard(event.key, event.shiftKey ? 16 : 3);
+      return;
+    }
+
+    if (event.key === "Escape") clearSelection();
+  }
+
+  function resetEverything() {
+    const confirmed = window.confirm(
+      "アップロード画像、背景、配置、ラベル、フォント、色設定をすべて初期化します。よろしいですか？",
+    );
+    if (!confirmed) return;
+
+    resetEpoch += 1;
+    backgroundLoadRequest += 1;
+    finishPendingEdit();
+    assets.clear();
+    state = createDefaultState();
+    selectedId = null;
+    interaction = null;
+    undoStack.length = 0;
+    redoStack.length = 0;
+    dom.fileInput.value = "";
+    dom.backgroundImageInput.value = "";
+    dom.chooseBackgroundImageButton.disabled = false;
+    dom.chooseBackgroundImageButton.textContent = "背景画像を選択";
+    try {
+      localStorage.removeItem(PREFERENCES_KEY);
+    } catch {
+      // Optional storage cleanup.
+    }
+    renderAll();
+    showToast("すべて初期化しました");
+  }
+
+  function setPlacementShape(shape) {
+    const placement = getSelectedPlacement();
+    if (!placement || placement.shape === shape) return;
+    const before = captureSnapshot();
+    placement.shape = shape;
+    commitBefore(before);
+    renderPlacements();
+    syncCharacterSettings();
+  }
+
+  function applyPreset(name) {
+    const preset = PRESETS[name];
+    if (!preset) return;
+    const before = captureSnapshot();
+    Object.assign(state.appearance, preset, { activePreset: name });
+    commitBefore(before);
+    renderAppearance();
+  }
+
+  function drawArrowHead(context, x, y, direction, color) {
+    const length = 12;
+    const half = 7;
+    context.save();
+    context.translate(x, y);
+    context.rotate(direction);
+    context.beginPath();
+    context.moveTo(0, 0);
+    context.lineTo(-length, -half);
+    context.lineTo(-length, half);
+    context.closePath();
+    context.fillStyle = color;
+    context.fill();
+    context.restore();
+  }
+
+  function splitTextToLines(context, text, maxWidth, maxLines) {
+    const characters = Array.from(text.trim());
+    const lines = [];
+    let current = "";
+    let consumed = 0;
+
+    for (const character of characters) {
+      const candidate = current + character;
+      if (current && context.measureText(candidate).width > maxWidth) {
+        lines.push(current);
+        current = character;
+        if (lines.length === maxLines) break;
+      } else {
+        current = candidate;
+      }
+      consumed += 1;
+    }
+
+    if (lines.length < maxLines && current) lines.push(current);
+    const joinedLength = Array.from(lines.join("")).length;
+    if (joinedLength < characters.length && lines.length) {
+      let last = lines[lines.length - 1];
+      while (last && context.measureText(`${last}…`).width > maxWidth) last = last.slice(0, -1);
+      lines[lines.length - 1] = `${last}…`;
+    }
+    return lines.slice(0, maxLines);
+  }
+
+  function drawAxisLabel(
+    context,
+    text,
+    x,
+    y,
+    maxWidth,
+    textAlign = "center",
+    initialFontSize = 26,
+  ) {
+    if (!text.trim()) return;
+    let fontSize = initialFontSize;
+    context.save();
+    context.fillStyle = state.appearance.textColor;
+    context.textAlign = textAlign;
+    context.textBaseline = "middle";
+    context.font = `800 ${fontSize}px ${getFontStack()}`;
+    let lines = splitTextToLines(context, text, maxWidth, 2);
+    while (fontSize > 15 && lines.some((line) => context.measureText(line).width > maxWidth)) {
+      fontSize -= 1;
+      context.font = `800 ${fontSize}px ${getFontStack()}`;
+      lines = splitTextToLines(context, text, maxWidth, 2);
+    }
+    const lineHeight = fontSize * 1.14;
+    const startY = y - ((lines.length - 1) * lineHeight) / 2;
+    lines.forEach((line, index) => context.fillText(line, x, startY + index * lineHeight));
+    context.restore();
+  }
+
+  function roundedRectPath(context, x, y, width, height, radius) {
+    const r = Math.min(radius, width / 2, height / 2);
+    context.beginPath();
+    context.moveTo(x + r, y);
+    context.lineTo(x + width - r, y);
+    context.quadraticCurveTo(x + width, y, x + width, y + r);
+    context.lineTo(x + width, y + height - r);
+    context.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+    context.lineTo(x + r, y + height);
+    context.quadraticCurveTo(x, y + height, x, y + height - r);
+    context.lineTo(x, y + r);
+    context.quadraticCurveTo(x, y, x + r, y);
+    context.closePath();
+  }
+
+  function drawImageCover(context, image, x, y, size, shape) {
+    const sourceWidth = image.naturalWidth || image.width;
+    const sourceHeight = image.naturalHeight || image.height;
+    if (!sourceWidth || !sourceHeight || size <= 0) return;
+
+    let sx = 0;
+    let sy = 0;
+    let sw = sourceWidth;
+    let sh = sourceHeight;
+    if (sourceWidth > sourceHeight) {
+      sw = sourceHeight;
+      sx = (sourceWidth - sw) / 2;
+    } else if (sourceHeight > sourceWidth) {
+      sh = sourceWidth;
+      sy = (sourceHeight - sh) / 2;
+    }
+
+    context.save();
+    if (shape === "circle") {
+      context.beginPath();
+      context.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
+      context.clip();
+    } else {
+      context.beginPath();
+      context.rect(x, y, size, size);
+      context.clip();
+    }
+    context.fillStyle = "#e8ecea";
+    context.fillRect(x, y, size, size);
+    context.drawImage(image, sx, sy, sw, sh, x, y, size, size);
+    context.restore();
+  }
+
+  function drawBackgroundImageCover(context, image) {
+    const sourceWidth = image.naturalWidth || image.width;
+    const sourceHeight = image.naturalHeight || image.height;
+    if (!sourceWidth || !sourceHeight) return;
+
+    const targetRatio = 1;
+    const sourceRatio = sourceWidth / sourceHeight;
+    let sx = 0;
+    let sy = 0;
+    let sw = sourceWidth;
+    let sh = sourceHeight;
+    if (sourceRatio > targetRatio) {
+      sw = sourceHeight * targetRatio;
+      sx = (sourceWidth - sw) / 2;
+    } else if (sourceRatio < targetRatio) {
+      sh = sourceWidth / targetRatio;
+      sy = (sourceHeight - sh) / 2;
+    }
+    context.drawImage(image, sx, sy, sw, sh, 0, 0, MAP_SIZE, MAP_SIZE);
+  }
+
+  function fitTextWithEllipsis(context, text, maxWidth) {
+    if (context.measureText(text).width <= maxWidth) return text;
+    const characters = Array.from(text);
+    while (characters.length && context.measureText(`${characters.join("")}…`).width > maxWidth) {
+      characters.pop();
+    }
+    return `${characters.join("")}…`;
+  }
+
+  function drawPlacement(context, placement) {
+    const asset = assets.get(placement.assetId);
+    if (!asset) return;
+
+    const border = clamp(placement.borderWidth, 0, placement.size / 3);
+    const innerX = placement.x + border;
+    const innerY = placement.y + border;
+    const innerSize = Math.max(1, placement.size - border * 2);
+    drawImageCover(context, asset.image, innerX, innerY, innerSize, placement.shape);
+
+    if (border > 0) {
+      context.save();
+      context.strokeStyle = placement.borderColor;
+      context.lineWidth = border;
+      if (placement.shape === "circle") {
+        context.beginPath();
+        context.arc(
+          placement.x + placement.size / 2,
+          placement.y + placement.size / 2,
+          Math.max(0, placement.size / 2 - border / 2),
+          0,
+          Math.PI * 2,
+        );
+      } else {
+        context.beginPath();
+        context.rect(
+          placement.x + border / 2,
+          placement.y + border / 2,
+          Math.max(0, placement.size - border),
+          Math.max(0, placement.size - border),
+        );
+      }
+      context.stroke();
+      context.restore();
+    }
+
+    if (captionIsVisible(placement)) {
+      const metrics = getCaptionMetrics(placement);
+      const height = 24;
+      const top = placement.y + placement.size + 6;
+      context.save();
+      roundedRectPath(context, metrics.left, top, metrics.width, height, 12);
+      context.fillStyle = "rgba(255, 255, 255, 0.93)";
+      context.fill();
+      context.strokeStyle = "rgba(61, 79, 73, 0.22)";
+      context.lineWidth = 1;
+      context.stroke();
+      context.fillStyle = state.appearance.textColor;
+      context.font = `700 14px ${getFontStack()}`;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      const label = fitTextWithEllipsis(context, placement.name.trim(), metrics.width - 14);
+      context.fillText(label, metrics.left + metrics.width / 2, top + height / 2 + 0.5);
+      context.restore();
+    }
+  }
+
+  function createExportCanvas(scale) {
+    const canvas = document.createElement("canvas");
+    canvas.width = MAP_SIZE * scale;
+    canvas.height = MAP_SIZE * scale;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Canvasを作成できませんでした");
+    context.scale(scale, scale);
+
+    if (dom.includeBackgroundInput.checked) {
+      if (state.appearance.backgroundMode === "image") {
+        const backgroundAsset = assets.get(state.backgroundAssetId);
+        if (backgroundAsset) drawBackgroundImageCover(context, backgroundAsset.image);
+      } else if (state.appearance.backgroundMode === "gradient") {
+        const gradient = context.createLinearGradient(0, 0, MAP_SIZE, MAP_SIZE);
+        gradient.addColorStop(0, state.appearance.gradientStart);
+        gradient.addColorStop(1, state.appearance.gradientEnd);
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, MAP_SIZE, MAP_SIZE);
+      } else if (state.appearance.backgroundMode === "solid") {
+        context.fillStyle = state.appearance.backgroundColor;
+        context.fillRect(0, 0, MAP_SIZE, MAP_SIZE);
+      }
+    }
+
+    const axisColors = getAxisColors();
+    const axisInset = (MAP_SIZE * (100 - state.appearance.axisLength)) / 200;
+    const axisStart = axisInset;
+    const axisEnd = MAP_SIZE - axisInset;
+    const horizontalGradient = context.createLinearGradient(
+      axisStart,
+      MAP_SIZE / 2,
+      axisEnd,
+      MAP_SIZE / 2,
+    );
+    horizontalGradient.addColorStop(0, axisColors.start);
+    horizontalGradient.addColorStop(1, axisColors.end);
+    const verticalGradient = context.createLinearGradient(
+      MAP_SIZE / 2,
+      axisStart,
+      MAP_SIZE / 2,
+      axisEnd,
+    );
+    verticalGradient.addColorStop(0, axisColors.start);
+    verticalGradient.addColorStop(1, axisColors.end);
+
+    context.save();
+    context.lineWidth = 2.5;
+    context.lineCap = "round";
+
+    context.strokeStyle = horizontalGradient;
+    context.beginPath();
+    context.moveTo(axisStart, MAP_SIZE / 2);
+    context.lineTo(axisEnd, MAP_SIZE / 2);
+    context.stroke();
+
+    context.strokeStyle = verticalGradient;
+    context.beginPath();
+    context.moveTo(MAP_SIZE / 2, axisStart);
+    context.lineTo(MAP_SIZE / 2, axisEnd);
+    context.stroke();
+    drawArrowHead(context, axisStart, MAP_SIZE / 2, Math.PI, axisColors.start);
+    drawArrowHead(context, axisEnd, MAP_SIZE / 2, 0, axisColors.end);
+    drawArrowHead(context, MAP_SIZE / 2, axisStart, -Math.PI / 2, axisColors.start);
+    drawArrowHead(context, MAP_SIZE / 2, axisEnd, Math.PI / 2, axisColors.end);
+    context.restore();
+
+    drawAxisLabel(context, state.mapTitle, 18, 36, 220, "left", 22);
+    drawAxisLabel(context, state.axis.top, MAP_SIZE / 2, 27, 300);
+    drawAxisLabel(context, state.axis.bottom, MAP_SIZE / 2, MAP_SIZE - 27, 300);
+    drawAxisLabel(context, state.axis.left, 18, MAP_SIZE / 2, 220, "left");
+    drawAxisLabel(context, state.axis.right, MAP_SIZE - 18, MAP_SIZE / 2, 220, "right");
+
+    for (const placement of state.placements) drawPlacement(context, placement);
+    return canvas;
+  }
+
+  async function exportPng() {
+    finishPendingEdit();
+    const originalText = dom.exportButton.textContent;
+    dom.exportButton.disabled = true;
+    dom.exportButton.textContent = "PNGを作成中…";
+    try {
+      const scale = clamp(Number(dom.exportScaleInput.value) || 2, 1, 3);
+      const canvas = createExportCanvas(scale);
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob((result) => {
+          if (result) resolve(result);
+          else reject(new Error("PNGを生成できませんでした"));
+        }, "image/png");
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "character-attribute-map.png";
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+      showToast(`${MAP_SIZE * scale} × ${MAP_SIZE * scale}pxのPNGを保存しました`);
+    } catch {
+      showToast("PNGの保存に失敗しました。もう一度お試しください", true);
+    } finally {
+      dom.exportButton.disabled = false;
+      dom.exportButton.textContent = originalText;
+    }
+  }
+
+  function configureInputs() {
+    bindStatefulControl(
+      dom.mapTitleInput,
+      () => {
+        state.mapTitle = dom.mapTitleInput.value;
+      },
+      () => {
+        const title = state.mapTitle.trim();
+        dom.mapTitleDisplay.textContent = title;
+        dom.mapTitleDisplay.hidden = !title;
+        savePreferencesSoon();
+      },
+    );
+
+    const axisBindings = [
+      [dom.topLabelInput, "top", dom.topAxisLabel],
+      [dom.bottomLabelInput, "bottom", dom.bottomAxisLabel],
+      [dom.leftLabelInput, "left", dom.leftAxisLabel],
+      [dom.rightLabelInput, "right", dom.rightAxisLabel],
+    ];
+    for (const [input, key, label] of axisBindings) {
+      bindStatefulControl(
+        input,
+        () => {
+          state.axis[key] = input.value;
+        },
+        () => {
+          label.textContent = input.value;
+          savePreferencesSoon();
+        },
+      );
+    }
+
+    bindStatefulControl(
+      dom.characterNameInput,
+      () => {
+        const placement = getSelectedPlacement();
+        if (!placement) return;
+        placement.name = dom.characterNameInput.value;
+        constrainPlacement(placement);
+      },
+      () => {
+        renderPlacements();
+        updateSelectionStatus();
+      },
+    );
+
+    bindStatefulControl(
+      dom.characterSizeInput,
+      () => {
+        const placement = getSelectedPlacement();
+        if (!placement) return;
+        placement.size = Number(dom.characterSizeInput.value);
+        constrainPlacement(placement);
+      },
+      () => {
+        const placement = getSelectedPlacement();
+        if (!placement) return;
+        dom.characterSizeOutput.textContent = `${placement.size} px`;
+        renderPlacements();
+      },
+    );
+
+    bindStatefulControl(
+      dom.borderColorInput,
+      () => {
+        const placement = getSelectedPlacement();
+        if (placement) placement.borderColor = dom.borderColorInput.value.toLowerCase();
+      },
+      () => {
+        dom.borderColorValue.textContent = dom.borderColorInput.value.toUpperCase();
+        renderPlacements();
+      },
+    );
+
+    bindStatefulControl(
+      dom.borderWidthInput,
+      () => {
+        const placement = getSelectedPlacement();
+        if (placement) placement.borderWidth = Number(dom.borderWidthInput.value);
+      },
+      renderPlacements,
+      "change",
+    );
+
+    bindStatefulControl(
+      dom.showNameInput,
+      () => {
+        const placement = getSelectedPlacement();
+        if (!placement) return;
+        placement.showName = dom.showNameInput.checked;
+        constrainPlacement(placement);
+      },
+      renderPlacements,
+      "change",
+    );
+
+    bindStatefulControl(
+      dom.backgroundModeInput,
+      () => {
+        state.appearance.backgroundMode = dom.backgroundModeInput.value;
+        state.appearance.activePreset = "custom";
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+      "change",
+    );
+
+    bindStatefulControl(
+      dom.backgroundColorInput,
+      () => {
+        state.appearance.backgroundMode = "solid";
+        state.appearance.backgroundColor = dom.backgroundColorInput.value.toLowerCase();
+        state.appearance.activePreset = "custom";
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+    );
+
+    bindStatefulControl(
+      dom.gradientStartInput,
+      () => {
+        state.appearance.backgroundMode = "gradient";
+        state.appearance.gradientStart = dom.gradientStartInput.value.toLowerCase();
+        state.appearance.activePreset = "custom";
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+    );
+
+    bindStatefulControl(
+      dom.gradientEndInput,
+      () => {
+        state.appearance.backgroundMode = "gradient";
+        state.appearance.gradientEnd = dom.gradientEndInput.value.toLowerCase();
+        state.appearance.activePreset = "custom";
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+    );
+
+    bindStatefulControl(
+      dom.axisModeInput,
+      () => {
+        state.appearance.axisMode = dom.axisModeInput.value;
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+      "change",
+    );
+
+    bindStatefulControl(
+      dom.axisColorInput,
+      () => {
+        state.appearance.axisColor = dom.axisColorInput.value.toLowerCase();
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+    );
+
+    bindStatefulControl(
+      dom.axisGradientStartInput,
+      () => {
+        state.appearance.axisMode = "gradient";
+        state.appearance.axisGradientStart = dom.axisGradientStartInput.value.toLowerCase();
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+    );
+
+    bindStatefulControl(
+      dom.axisGradientEndInput,
+      () => {
+        state.appearance.axisMode = "gradient";
+        state.appearance.axisGradientEnd = dom.axisGradientEndInput.value.toLowerCase();
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+    );
+
+    bindStatefulControl(
+      dom.axisLengthInput,
+      () => {
+        state.appearance.axisLength = clamp(
+          Math.round(Number(dom.axisLengthInput.value) || 84),
+          AXIS_LENGTH_MIN,
+          AXIS_LENGTH_MAX,
+        );
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+    );
+
+    bindStatefulControl(
+      dom.fontFamilyInput,
+      () => {
+        if (isFontOption(dom.fontFamilyInput.value)) {
+          state.appearance.fontFamily = dom.fontFamilyInput.value;
+        }
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+      "change",
+    );
+
+    bindStatefulControl(
+      dom.textColorInput,
+      () => {
+        state.appearance.textColor = dom.textColorInput.value.toLowerCase();
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+    );
+  }
+
+  function configureEvents() {
+    configureInputs();
+
+    dom.undoButton.addEventListener("click", undo);
+    dom.redoButton.addEventListener("click", redo);
+    dom.resetButton.addEventListener("click", resetEverything);
+    dom.deleteButton.addEventListener("click", deleteSelected);
+    dom.duplicateButton.addEventListener("click", duplicateSelected);
+    dom.squareShapeButton.addEventListener("click", () => setPlacementShape("square"));
+    dom.circleShapeButton.addEventListener("click", () => setPlacementShape("circle"));
+    dom.exportButton.addEventListener("click", exportPng);
+
+    for (const button of dom.presetButtons) {
+      button.addEventListener("click", () => applyPreset(button.dataset.preset));
+    }
+
+    dom.chooseFilesButton.addEventListener("click", () => dom.fileInput.click());
+    dom.fileInput.addEventListener("change", () => handleFiles(dom.fileInput.files));
+    dom.chooseBackgroundImageButton.addEventListener("click", () => dom.backgroundImageInput.click());
+    dom.backgroundImageInput.addEventListener("change", () =>
+      handleBackgroundFile(dom.backgroundImageInput.files),
+    );
+    dom.removeBackgroundImageButton.addEventListener("click", removeBackgroundImage);
+
+    dom.dropZone.addEventListener("dragover", (event) => {
+      if (!event.dataTransfer?.types.includes("Files")) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+      dom.dropZone.classList.add("is-dragging");
+    });
+    dom.dropZone.addEventListener("dragleave", (event) => {
+      if (!dom.dropZone.contains(event.relatedTarget)) dom.dropZone.classList.remove("is-dragging");
+    });
+    dom.dropZone.addEventListener("drop", (event) => {
+      if (!event.dataTransfer?.files.length) return;
+      event.preventDefault();
+      dom.dropZone.classList.remove("is-dragging");
+      handleFiles(event.dataTransfer.files);
+    });
+
+    dom.imageLibrary.addEventListener("click", (event) => {
+      const card = event.target.closest("[data-asset-id]");
+      if (card) addPlacement(card.dataset.assetId);
+    });
+    dom.imageLibrary.addEventListener("dragstart", (event) => {
+      const card = event.target.closest("[data-asset-id]");
+      if (!card || !event.dataTransfer) return;
+      event.dataTransfer.effectAllowed = "copy";
+      event.dataTransfer.setData("application/x-character-asset", card.dataset.assetId);
+      event.dataTransfer.setData("text/plain", card.dataset.assetId);
+    });
+
+    dom.mapStage.addEventListener("dragover", (event) => {
+      const hasAsset = event.dataTransfer?.types.includes("application/x-character-asset");
+      const hasFiles = event.dataTransfer?.types.includes("Files");
+      if (!hasAsset && !hasFiles) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+      dom.mapStage.classList.add("is-drop-target");
+    });
+    dom.mapStage.addEventListener("dragleave", (event) => {
+      if (!dom.mapStage.contains(event.relatedTarget)) dom.mapStage.classList.remove("is-drop-target");
+    });
+    dom.mapStage.addEventListener("drop", (event) => {
+      event.preventDefault();
+      dom.mapStage.classList.remove("is-drop-target");
+      const point = pointOnMap(event);
+      if (event.dataTransfer?.files.length) {
+        handleFiles(event.dataTransfer.files, { placeAt: point });
+        return;
+      }
+      const assetId =
+        event.dataTransfer?.getData("application/x-character-asset") ||
+        event.dataTransfer?.getData("text/plain");
+      if (assetId) addPlacement(assetId, point);
+    });
+
+    document.addEventListener("dragover", (event) => {
+      if (event.dataTransfer?.types.includes("Files")) event.preventDefault();
+    });
+    document.addEventListener("drop", (event) => {
+      if (!event.dataTransfer?.files.length) return;
+      if (dom.dropZone.contains(event.target) || dom.mapStage.contains(event.target)) return;
+      event.preventDefault();
+      showToast("画像は左の追加エリア、または属性マップへドロップしてください", true);
+    });
+
+    dom.mapStage.addEventListener("pointerdown", handlePointerDown);
+    dom.mapStage.addEventListener("pointermove", handlePointerMove);
+    dom.mapStage.addEventListener("pointerup", finishPointerInteraction);
+    dom.mapStage.addEventListener("pointercancel", finishPointerInteraction);
+    dom.mapStage.addEventListener("focusin", (event) => {
+      const node = event.target.closest(".character-node");
+      if (node) selectPlacement(node.dataset.placementId);
+    });
+
+    document.addEventListener("keydown", handleKeyboard);
+
+    const updateMapScale = (width = dom.mapStage.getBoundingClientRect().width) => {
+      dom.mapStage.style.setProperty("--map-scale", String((width || MAP_SIZE) / MAP_SIZE));
+    };
+    updateMapScale();
+    if ("ResizeObserver" in window) {
+      const resizeObserver = new ResizeObserver((entries) => {
+        updateMapScale(entries[0]?.contentRect.width);
+      });
+      resizeObserver.observe(dom.mapStage);
+    } else {
+      window.addEventListener("resize", () => updateMapScale());
+    }
+  }
+
+  loadPreferences();
+  configureEvents();
+  renderAll();
+})();
