@@ -14,6 +14,8 @@
   const LABEL_LAYOUTS = new Set(["inside", "outside"]);
   const AXIS_LENGTH_MIN = 50;
   const AXIS_LENGTH_MAX = 90;
+  const BACKGROUND_OPACITY_MIN = 0;
+  const BACKGROUND_OPACITY_MAX = 100;
   const OUTSIDE_VERTICAL_LABEL_MAX_CHARACTERS = 11;
   const OUTSIDE_PLOT_RECT = Object.freeze({ x: 100, y: 134, size: 600 });
   const TRANSPARENCY_GRID =
@@ -123,6 +125,34 @@
     backgroundImageName: document.querySelector("#backgroundImageName"),
     removeBackgroundImageButton: document.querySelector("#removeBackgroundImageButton"),
     backgroundTransparentHint: document.querySelector("#backgroundTransparentHint"),
+    backgroundOpacityField: document.querySelector("#backgroundOpacityField"),
+    backgroundOpacityInput: document.querySelector("#backgroundOpacityInput"),
+    backgroundOpacityOutput: document.querySelector("#backgroundOpacityOutput"),
+    outerBackgroundGroup: document.querySelector("#outerBackgroundGroup"),
+    outerBackgroundModeInput: document.querySelector("#outerBackgroundModeInput"),
+    outerBackgroundSolidFields: document.querySelector("#outerBackgroundSolidFields"),
+    outerBackgroundGradientFields: document.querySelector("#outerBackgroundGradientFields"),
+    outerBackgroundColorInput: document.querySelector("#outerBackgroundColorInput"),
+    outerBackgroundColorValue: document.querySelector("#outerBackgroundColorValue"),
+    outerGradientStartInput: document.querySelector("#outerGradientStartInput"),
+    outerGradientStartValue: document.querySelector("#outerGradientStartValue"),
+    outerGradientEndInput: document.querySelector("#outerGradientEndInput"),
+    outerGradientEndValue: document.querySelector("#outerGradientEndValue"),
+    outerBackgroundImageFields: document.querySelector("#outerBackgroundImageFields"),
+    outerBackgroundImageInput: document.querySelector("#outerBackgroundImageInput"),
+    chooseOuterBackgroundImageButton: document.querySelector(
+      "#chooseOuterBackgroundImageButton",
+    ),
+    outerBackgroundImageEmpty: document.querySelector("#outerBackgroundImageEmpty"),
+    outerBackgroundImagePreview: document.querySelector("#outerBackgroundImagePreview"),
+    outerBackgroundImageThumbnail: document.querySelector("#outerBackgroundImageThumbnail"),
+    outerBackgroundImageName: document.querySelector("#outerBackgroundImageName"),
+    removeOuterBackgroundImageButton: document.querySelector(
+      "#removeOuterBackgroundImageButton",
+    ),
+    outerBackgroundTransparentHint: document.querySelector(
+      "#outerBackgroundTransparentHint",
+    ),
     axisModeInput: document.querySelector("#axisModeInput"),
     axisSolidFields: document.querySelector("#axisSolidFields"),
     axisGradientFields: document.querySelector("#axisGradientFields"),
@@ -142,6 +172,7 @@
     exportButton: document.querySelector("#exportButton"),
     mapComposition: document.querySelector("#mapComposition"),
     mapStage: document.querySelector("#mapStage"),
+    mapInnerBackground: document.querySelector("#mapInnerBackground"),
     placementLayer: document.querySelector("#placementLayer"),
     mapEmptyHint: document.querySelector("#mapEmptyHint"),
     selectionStatus: document.querySelector("#selectionStatus"),
@@ -161,12 +192,13 @@
   let toastTimer = 0;
   let preferenceTimer = 0;
   let resetEpoch = 0;
-  let backgroundLoadRequest = 0;
+  const backgroundLoadRequests = { inner: 0, outer: 0 };
 
   function createDefaultState() {
     return {
       mapTitle: "",
       backgroundAssetId: null,
+      outerBackgroundAssetId: null,
       axis: {
         top: "善",
         bottom: "悪",
@@ -178,6 +210,11 @@
         backgroundColor: "#fffdf8",
         gradientStart: "#fff4cf",
         gradientEnd: "#d9eff2",
+        backgroundOpacity: 100,
+        outerBackgroundMode: "solid",
+        outerBackgroundColor: "#eef2f0",
+        outerGradientStart: "#f4eee2",
+        outerGradientEnd: "#dfeeea",
         axisMode: "solid",
         axisColor: "#71827c",
         axisGradientStart: "#71827c",
@@ -213,6 +250,12 @@
       if (BACKGROUND_MODES.has(appearance.backgroundMode) && appearance.backgroundMode !== "image") {
         state.appearance.backgroundMode = appearance.backgroundMode;
       }
+      if (
+        BACKGROUND_MODES.has(appearance.outerBackgroundMode) &&
+        appearance.outerBackgroundMode !== "image"
+      ) {
+        state.appearance.outerBackgroundMode = appearance.outerBackgroundMode;
+      }
       if (appearance.axisMode === "solid" || appearance.axisMode === "gradient") {
         state.appearance.axisMode = appearance.axisMode;
       }
@@ -226,6 +269,9 @@
         "backgroundColor",
         "gradientStart",
         "gradientEnd",
+        "outerBackgroundColor",
+        "outerGradientStart",
+        "outerGradientEnd",
         "axisColor",
         "axisGradientStart",
         "axisGradientEnd",
@@ -233,12 +279,26 @@
       ]) {
         if (isHexColor(appearance[key])) state.appearance[key] = appearance[key].toLowerCase();
       }
+      if (!Object.prototype.hasOwnProperty.call(appearance, "outerBackgroundMode")) {
+        state.appearance.outerBackgroundMode = state.appearance.backgroundMode;
+        state.appearance.outerBackgroundColor = state.appearance.backgroundColor;
+        state.appearance.outerGradientStart = state.appearance.gradientStart;
+        state.appearance.outerGradientEnd = state.appearance.gradientEnd;
+      }
       const axisLength = Number(appearance.axisLength);
       if (Number.isFinite(axisLength)) {
         state.appearance.axisLength = clamp(
           Math.round(axisLength),
           AXIS_LENGTH_MIN,
           AXIS_LENGTH_MAX,
+        );
+      }
+      const backgroundOpacity = Number(appearance.backgroundOpacity);
+      if (Number.isFinite(backgroundOpacity)) {
+        state.appearance.backgroundOpacity = clamp(
+          Math.round(backgroundOpacity),
+          BACKGROUND_OPACITY_MIN,
+          BACKGROUND_OPACITY_MAX,
         );
       }
       if (isFontOption(appearance.fontFamily)) {
@@ -263,6 +323,10 @@
         ...state.appearance,
         backgroundMode:
           state.appearance.backgroundMode === "image" ? "solid" : state.appearance.backgroundMode,
+        outerBackgroundMode:
+          state.appearance.outerBackgroundMode === "image"
+            ? "solid"
+            : state.appearance.outerBackgroundMode,
       };
       localStorage.setItem(
         PREFERENCES_KEY,
@@ -319,6 +383,7 @@
       for (const id of snapshot.libraryIds || []) referencedIds.add(id);
       for (const placement of snapshot.placements || []) referencedIds.add(placement.assetId);
       if (snapshot.backgroundAssetId) referencedIds.add(snapshot.backgroundAssetId);
+      if (snapshot.outerBackgroundAssetId) referencedIds.add(snapshot.outerBackgroundAssetId);
     };
 
     collect(state);
@@ -331,6 +396,30 @@
 
   function restoreSnapshot(snapshot) {
     state = cloneData(snapshot);
+    const defaults = createDefaultState();
+    if (!BACKGROUND_MODES.has(state.appearance.backgroundMode)) {
+      state.appearance.backgroundMode = defaults.appearance.backgroundMode;
+    }
+    if (!BACKGROUND_MODES.has(state.appearance.outerBackgroundMode)) {
+      state.appearance.outerBackgroundMode = defaults.appearance.outerBackgroundMode;
+    }
+    for (const key of [
+      "outerBackgroundColor",
+      "outerGradientStart",
+      "outerGradientEnd",
+    ]) {
+      if (!isHexColor(state.appearance[key])) {
+        state.appearance[key] = defaults.appearance[key];
+      }
+    }
+    const backgroundOpacity = Number(state.appearance.backgroundOpacity);
+    state.appearance.backgroundOpacity = Number.isFinite(backgroundOpacity)
+      ? clamp(
+          Math.round(backgroundOpacity),
+          BACKGROUND_OPACITY_MIN,
+          BACKGROUND_OPACITY_MAX,
+        )
+      : defaults.appearance.backgroundOpacity;
     if (!LABEL_LAYOUTS.has(state.appearance.labelLayout)) {
       state.appearance.labelLayout = "inside";
     }
@@ -340,8 +429,15 @@
     state.libraryIds = state.libraryIds.filter((id) => assets.has(id));
     state.placements = state.placements.filter((placement) => assets.has(placement.assetId));
     if (!assets.has(state.backgroundAssetId)) state.backgroundAssetId = null;
+    if (!assets.has(state.outerBackgroundAssetId)) state.outerBackgroundAssetId = null;
     if (state.appearance.backgroundMode === "image" && !state.backgroundAssetId) {
       state.appearance.backgroundMode = "solid";
+    }
+    if (
+      state.appearance.outerBackgroundMode === "image" &&
+      !state.outerBackgroundAssetId
+    ) {
+      state.appearance.outerBackgroundMode = "solid";
     }
     if (!state.placements.some((placement) => placement.id === selectedId)) selectedId = null;
     renderAll();
@@ -613,58 +709,77 @@
     });
   }
 
-  async function handleBackgroundFile(fileList) {
+  function getBackgroundUploadTarget(layer) {
+    const isOuter = layer === "outer";
+    return {
+      assetKey: isOuter ? "outerBackgroundAssetId" : "backgroundAssetId",
+      buttonText: isOuter ? "外側の画像を選択" : "内側の画像を選択",
+      input: isOuter ? dom.outerBackgroundImageInput : dom.backgroundImageInput,
+      label: isOuter ? "外側背景" : "内側背景",
+      modeKey: isOuter ? "outerBackgroundMode" : "backgroundMode",
+      removeButton: isOuter
+        ? dom.removeOuterBackgroundImageButton
+        : dom.removeBackgroundImageButton,
+      chooseButton: isOuter
+        ? dom.chooseOuterBackgroundImageButton
+        : dom.chooseBackgroundImageButton,
+    };
+  }
+
+  async function handleBackgroundFile(fileList, layer = "inner") {
     const file = Array.from(fileList || [])[0];
     if (!file) return;
+    const target = getBackgroundUploadTarget(layer);
     if (!SUPPORTED_TYPES.has(file.type) && !SUPPORTED_EXTENSIONS.test(file.name)) {
-      dom.backgroundImageInput.value = "";
+      target.input.value = "";
       showToast("背景にはPNG・JPEG・WebPの画像を選んでください", true);
       return;
     }
 
     const epoch = resetEpoch;
-    const requestId = ++backgroundLoadRequest;
-    dom.chooseBackgroundImageButton.disabled = true;
-    dom.removeBackgroundImageButton.disabled = true;
-    dom.chooseBackgroundImageButton.textContent = "読み込み中…";
+    const requestId = ++backgroundLoadRequests[layer];
+    target.chooseButton.disabled = true;
+    target.removeButton.disabled = true;
+    target.chooseButton.textContent = "読み込み中…";
 
     try {
       const asset = await readImageFile(file);
-      if (epoch !== resetEpoch || requestId !== backgroundLoadRequest) return;
+      if (epoch !== resetEpoch || requestId !== backgroundLoadRequests[layer]) return;
 
       const before = captureSnapshot();
       assets.set(asset.id, asset);
-      state.backgroundAssetId = asset.id;
-      state.appearance.backgroundMode = "image";
-      state.appearance.activePreset = "custom";
+      state[target.assetKey] = asset.id;
+      state.appearance[target.modeKey] = "image";
+      if (layer === "inner") state.appearance.activePreset = "custom";
       commitBefore(before);
       renderAppearance();
-      showToast(`背景画像「${asset.fileName}」を設定しました`);
+      showToast(`${target.label}画像「${asset.fileName}」を設定しました`);
     } catch {
-      if (requestId === backgroundLoadRequest) {
-        showToast("背景画像を読み込めませんでした。ファイルを確認してください", true);
+      if (requestId === backgroundLoadRequests[layer]) {
+        showToast(`${target.label}画像を読み込めませんでした。ファイルを確認してください`, true);
       }
     } finally {
-      if (requestId === backgroundLoadRequest) {
-        dom.chooseBackgroundImageButton.disabled = false;
-        dom.removeBackgroundImageButton.disabled = false;
-        dom.chooseBackgroundImageButton.textContent = "背景画像を選択";
-        dom.backgroundImageInput.value = "";
+      if (requestId === backgroundLoadRequests[layer]) {
+        target.chooseButton.disabled = false;
+        target.chooseButton.textContent = target.buttonText;
+        target.input.value = "";
+        renderAppearance();
       }
     }
   }
 
-  function removeBackgroundImage() {
-    if (!state.backgroundAssetId) return;
+  function removeBackgroundImage(layer = "inner") {
+    const target = getBackgroundUploadTarget(layer);
+    if (!state[target.assetKey] || target.chooseButton.disabled) return;
     const before = captureSnapshot();
-    state.backgroundAssetId = null;
-    if (state.appearance.backgroundMode === "image") {
-      state.appearance.backgroundMode = "solid";
+    state[target.assetKey] = null;
+    if (state.appearance[target.modeKey] === "image") {
+      state.appearance[target.modeKey] = "solid";
     }
-    state.appearance.activePreset = "custom";
+    if (layer === "inner") state.appearance.activePreset = "custom";
     commitBefore(before);
     renderAppearance();
-    showToast("背景画像を削除しました");
+    showToast(`${target.label}画像を削除しました`);
   }
 
   function renderAll() {
@@ -728,38 +843,73 @@
     element.style.backgroundRepeat = "no-repeat";
   }
 
-  function applyMapBackground() {
-    const { backgroundMode } = state.appearance;
-    const asset = assets.get(state.backgroundAssetId);
-    const target =
-      state.appearance.labelLayout === "outside" ? dom.mapComposition : dom.mapStage;
-    resetPreviewBackground(dom.mapComposition);
-    resetPreviewBackground(dom.mapStage);
+  function getBackgroundSettings(layer) {
+    if (layer === "outer") {
+      return {
+        mode: state.appearance.outerBackgroundMode,
+        color: state.appearance.outerBackgroundColor,
+        gradientStart: state.appearance.outerGradientStart,
+        gradientEnd: state.appearance.outerGradientEnd,
+        assetId: state.outerBackgroundAssetId,
+      };
+    }
+    return {
+      mode: state.appearance.backgroundMode,
+      color: state.appearance.backgroundColor,
+      gradientStart: state.appearance.gradientStart,
+      gradientEnd: state.appearance.gradientEnd,
+      assetId: state.backgroundAssetId,
+    };
+  }
 
-    if (backgroundMode === "solid") {
-      target.style.backgroundColor = state.appearance.backgroundColor;
+  function applyPreviewBackground(element, settings, showTransparencyGrid) {
+    const asset = assets.get(settings.assetId);
+    resetPreviewBackground(element);
+
+    if (settings.mode === "solid") {
+      element.style.backgroundColor = settings.color;
       return;
     }
 
-    if (backgroundMode === "gradient") {
-      target.style.backgroundImage =
-        `linear-gradient(135deg, ${state.appearance.gradientStart}, ${state.appearance.gradientEnd})`;
-      target.style.backgroundSize = "cover";
+    if (settings.mode === "gradient") {
+      element.style.backgroundImage =
+        `linear-gradient(135deg, ${settings.gradientStart}, ${settings.gradientEnd})`;
+      element.style.backgroundSize = "cover";
       return;
     }
 
-    const imageLayer = backgroundMode === "image" && asset ? `url("${asset.src}"), ` : "";
-    target.style.backgroundColor = "#ffffff";
-    target.style.backgroundImage = `${imageLayer}${TRANSPARENCY_GRID}`;
-    target.style.backgroundPosition = imageLayer
+    if (settings.mode === "image" && asset && !showTransparencyGrid) {
+      element.style.backgroundImage = `url("${asset.src}")`;
+      element.style.backgroundPosition = "center";
+      element.style.backgroundSize = "cover";
+      return;
+    }
+
+    if (!showTransparencyGrid) return;
+    const imageLayer = settings.mode === "image" && asset ? `url("${asset.src}"), ` : "";
+    element.style.backgroundColor = "#ffffff";
+    element.style.backgroundImage = `${imageLayer}${TRANSPARENCY_GRID}`;
+    element.style.backgroundPosition = imageLayer
       ? "center, 0 0, 0 8px, 8px -8px, -8px 0"
       : "0 0, 0 8px, 8px -8px, -8px 0";
-    target.style.backgroundSize = imageLayer
+    element.style.backgroundSize = imageLayer
       ? "cover, 16px 16px, 16px 16px, 16px 16px, 16px 16px"
       : "16px 16px";
-    target.style.backgroundRepeat = imageLayer
+    element.style.backgroundRepeat = imageLayer
       ? "no-repeat, repeat, repeat, repeat, repeat"
       : "repeat";
+  }
+
+  function applyMapBackground() {
+    const isOutsideLayout = state.appearance.labelLayout === "outside";
+    resetPreviewBackground(dom.mapStage);
+    applyPreviewBackground(
+      dom.mapComposition,
+      isOutsideLayout ? getBackgroundSettings("outer") : { mode: "transparent" },
+      true,
+    );
+    applyPreviewBackground(dom.mapInnerBackground, getBackgroundSettings("inner"), false);
+    dom.mapInnerBackground.style.opacity = String(state.appearance.backgroundOpacity / 100);
   }
 
   function getAxisColors() {
@@ -775,9 +925,16 @@
     };
   }
 
+  function backgroundSettingsHasContent(settings) {
+    if (settings.mode === "solid" || settings.mode === "gradient") return true;
+    if (settings.mode === "image") return assets.has(settings.assetId);
+    return false;
+  }
+
   function renderAppearance() {
     const axisColors = getAxisColors();
     const backgroundAsset = assets.get(state.backgroundAssetId);
+    const outerBackgroundAsset = assets.get(state.outerBackgroundAssetId);
     const axisInset = (100 - state.appearance.axisLength) / 2;
     const isOutsideLayout = state.appearance.labelLayout === "outside";
     dom.mapComposition.classList.toggle("is-layout-outside", isOutsideLayout);
@@ -805,6 +962,7 @@
     dom.outsideLabelLayoutButton.setAttribute("aria-pressed", String(isOutsideLayout));
     dom.outsideLabelOptions.hidden = !isOutsideLayout;
     dom.verticalSideLabelsInput.checked = state.appearance.verticalSideLabels;
+    dom.outerBackgroundGroup.disabled = !isOutsideLayout;
 
     dom.backgroundModeInput.value = state.appearance.backgroundMode;
     dom.backgroundSolidFields.hidden = state.appearance.backgroundMode !== "solid";
@@ -816,10 +974,38 @@
     if (backgroundAsset) dom.backgroundImageThumbnail.src = backgroundAsset.src;
     else dom.backgroundImageThumbnail.removeAttribute("src");
     dom.backgroundImageName.textContent = backgroundAsset?.fileName || "";
-    dom.removeBackgroundImageButton.disabled = !backgroundAsset;
+    dom.removeBackgroundImageButton.disabled =
+      !backgroundAsset || dom.chooseBackgroundImageButton.disabled;
     dom.backgroundColorInput.value = state.appearance.backgroundColor;
     dom.gradientStartInput.value = state.appearance.gradientStart;
     dom.gradientEndInput.value = state.appearance.gradientEnd;
+    dom.backgroundOpacityInput.value = String(state.appearance.backgroundOpacity);
+    dom.backgroundOpacityOutput.textContent = `${state.appearance.backgroundOpacity}%`;
+    const backgroundOpacityIsDisabled = state.appearance.backgroundMode === "transparent";
+    dom.backgroundOpacityInput.disabled = backgroundOpacityIsDisabled;
+    dom.backgroundOpacityField.classList.toggle("is-disabled", backgroundOpacityIsDisabled);
+
+    dom.outerBackgroundModeInput.value = state.appearance.outerBackgroundMode;
+    dom.outerBackgroundSolidFields.hidden = state.appearance.outerBackgroundMode !== "solid";
+    dom.outerBackgroundGradientFields.hidden =
+      state.appearance.outerBackgroundMode !== "gradient";
+    dom.outerBackgroundImageFields.hidden = state.appearance.outerBackgroundMode !== "image";
+    dom.outerBackgroundTransparentHint.hidden =
+      state.appearance.outerBackgroundMode !== "transparent";
+    dom.outerBackgroundImageEmpty.hidden = Boolean(outerBackgroundAsset);
+    dom.outerBackgroundImagePreview.hidden = !outerBackgroundAsset;
+    if (outerBackgroundAsset) {
+      dom.outerBackgroundImageThumbnail.src = outerBackgroundAsset.src;
+    } else {
+      dom.outerBackgroundImageThumbnail.removeAttribute("src");
+    }
+    dom.outerBackgroundImageName.textContent = outerBackgroundAsset?.fileName || "";
+    dom.removeOuterBackgroundImageButton.disabled =
+      !outerBackgroundAsset || dom.chooseOuterBackgroundImageButton.disabled;
+    dom.outerBackgroundColorInput.value = state.appearance.outerBackgroundColor;
+    dom.outerGradientStartInput.value = state.appearance.outerGradientStart;
+    dom.outerGradientEndInput.value = state.appearance.outerGradientEnd;
+
     dom.axisModeInput.value = state.appearance.axisMode;
     dom.axisSolidFields.hidden = state.appearance.axisMode !== "solid";
     dom.axisGradientFields.hidden = state.appearance.axisMode !== "gradient";
@@ -833,14 +1019,24 @@
     dom.backgroundColorValue.textContent = state.appearance.backgroundColor.toUpperCase();
     dom.gradientStartValue.textContent = state.appearance.gradientStart.toUpperCase();
     dom.gradientEndValue.textContent = state.appearance.gradientEnd.toUpperCase();
+    dom.outerBackgroundColorValue.textContent =
+      state.appearance.outerBackgroundColor.toUpperCase();
+    dom.outerGradientStartValue.textContent = state.appearance.outerGradientStart.toUpperCase();
+    dom.outerGradientEndValue.textContent = state.appearance.outerGradientEnd.toUpperCase();
     dom.axisColorValue.textContent = state.appearance.axisColor.toUpperCase();
     dom.axisGradientStartValue.textContent = state.appearance.axisGradientStart.toUpperCase();
     dom.axisGradientEndValue.textContent = state.appearance.axisGradientEnd.toUpperCase();
     dom.textColorValue.textContent = state.appearance.textColor.toUpperCase();
-    dom.includeBackgroundInput.disabled = state.appearance.backgroundMode === "transparent";
+    const innerBackgroundIsVisible =
+      state.appearance.backgroundOpacity > 0 &&
+      backgroundSettingsHasContent(getBackgroundSettings("inner"));
+    const currentBackgroundIsVisible = isOutsideLayout
+      ? innerBackgroundIsVisible || backgroundSettingsHasContent(getBackgroundSettings("outer"))
+      : innerBackgroundIsVisible;
+    dom.includeBackgroundInput.disabled = !currentBackgroundIsVisible;
     dom.includeBackgroundInput.closest(".checkbox-row")?.classList.toggle(
       "is-disabled",
-      state.appearance.backgroundMode === "transparent",
+      !currentBackgroundIsVisible,
     );
 
     for (const button of dom.presetButtons) {
@@ -1207,7 +1403,8 @@
     if (!confirmed) return;
 
     resetEpoch += 1;
-    backgroundLoadRequest += 1;
+    backgroundLoadRequests.inner += 1;
+    backgroundLoadRequests.outer += 1;
     finishPendingEdit();
     assets.clear();
     state = createDefaultState();
@@ -1217,8 +1414,11 @@
     redoStack.length = 0;
     dom.fileInput.value = "";
     dom.backgroundImageInput.value = "";
+    dom.outerBackgroundImageInput.value = "";
     dom.chooseBackgroundImageButton.disabled = false;
-    dom.chooseBackgroundImageButton.textContent = "背景画像を選択";
+    dom.chooseBackgroundImageButton.textContent = "内側の画像を選択";
+    dom.chooseOuterBackgroundImageButton.disabled = false;
+    dom.chooseOuterBackgroundImageButton.textContent = "外側の画像を選択";
     try {
       localStorage.removeItem(PREFERENCES_KEY);
     } catch {
@@ -1448,6 +1648,28 @@
     context.drawImage(image, sx, sy, sw, sh, 0, 0, MAP_SIZE, MAP_SIZE);
   }
 
+  function drawConfiguredBackground(context, settings, opacity = 1) {
+    if (opacity <= 0) return;
+    const asset = assets.get(settings.assetId);
+    context.save();
+    context.globalAlpha = clamp(opacity, 0, 1);
+
+    if (settings.mode === "image" && asset) {
+      drawBackgroundImageCover(context, asset.image);
+    } else if (settings.mode === "gradient") {
+      const gradient = context.createLinearGradient(0, 0, MAP_SIZE, MAP_SIZE);
+      gradient.addColorStop(0, settings.gradientStart);
+      gradient.addColorStop(1, settings.gradientEnd);
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, MAP_SIZE, MAP_SIZE);
+    } else if (settings.mode === "solid") {
+      context.fillStyle = settings.color;
+      context.fillRect(0, 0, MAP_SIZE, MAP_SIZE);
+    }
+
+    context.restore();
+  }
+
   function fitTextWithEllipsis(context, text, maxWidth) {
     if (context.measureText(text).width <= maxWidth) return text;
     const characters = Array.from(text);
@@ -1527,25 +1749,13 @@
     if (!context) throw new Error("Canvasを作成できませんでした");
     context.scale(scale, scale);
 
-    if (dom.includeBackgroundInput.checked) {
-      if (state.appearance.backgroundMode === "image") {
-        const backgroundAsset = assets.get(state.backgroundAssetId);
-        if (backgroundAsset) drawBackgroundImageCover(context, backgroundAsset.image);
-      } else if (state.appearance.backgroundMode === "gradient") {
-        const gradient = context.createLinearGradient(0, 0, MAP_SIZE, MAP_SIZE);
-        gradient.addColorStop(0, state.appearance.gradientStart);
-        gradient.addColorStop(1, state.appearance.gradientEnd);
-        context.fillStyle = gradient;
-        context.fillRect(0, 0, MAP_SIZE, MAP_SIZE);
-      } else if (state.appearance.backgroundMode === "solid") {
-        context.fillStyle = state.appearance.backgroundColor;
-        context.fillRect(0, 0, MAP_SIZE, MAP_SIZE);
-      }
-    }
-
     const isOutsideLayout = state.appearance.labelLayout === "outside";
     const plotRect = getExportPlotRect();
     const plotScale = plotRect.size / MAP_SIZE;
+    const includeBackground = dom.includeBackgroundInput.checked;
+    if (includeBackground && isOutsideLayout) {
+      drawConfiguredBackground(context, getBackgroundSettings("outer"));
+    }
     const axisColors = getAxisColors();
     const axisInset = (MAP_SIZE * (100 - state.appearance.axisLength)) / 200;
     const axisStart = axisInset;
@@ -1554,6 +1764,13 @@
     context.save();
     context.translate(plotRect.x, plotRect.y);
     context.scale(plotScale, plotScale);
+    if (includeBackground) {
+      drawConfiguredBackground(
+        context,
+        getBackgroundSettings("inner"),
+        state.appearance.backgroundOpacity / 100,
+      );
+    }
     const horizontalGradient = context.createLinearGradient(
       axisStart,
       MAP_SIZE / 2,
@@ -1827,6 +2044,70 @@
     );
 
     bindStatefulControl(
+      dom.backgroundOpacityInput,
+      () => {
+        state.appearance.backgroundOpacity = clamp(
+          Math.round(Number(dom.backgroundOpacityInput.value) || 0),
+          BACKGROUND_OPACITY_MIN,
+          BACKGROUND_OPACITY_MAX,
+        );
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+    );
+
+    bindStatefulControl(
+      dom.outerBackgroundModeInput,
+      () => {
+        state.appearance.outerBackgroundMode = dom.outerBackgroundModeInput.value;
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+      "change",
+    );
+
+    bindStatefulControl(
+      dom.outerBackgroundColorInput,
+      () => {
+        state.appearance.outerBackgroundMode = "solid";
+        state.appearance.outerBackgroundColor =
+          dom.outerBackgroundColorInput.value.toLowerCase();
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+    );
+
+    bindStatefulControl(
+      dom.outerGradientStartInput,
+      () => {
+        state.appearance.outerBackgroundMode = "gradient";
+        state.appearance.outerGradientStart = dom.outerGradientStartInput.value.toLowerCase();
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+    );
+
+    bindStatefulControl(
+      dom.outerGradientEndInput,
+      () => {
+        state.appearance.outerBackgroundMode = "gradient";
+        state.appearance.outerGradientEnd = dom.outerGradientEndInput.value.toLowerCase();
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+    );
+
+    bindStatefulControl(
       dom.axisModeInput,
       () => {
         state.appearance.axisMode = dom.axisModeInput.value;
@@ -1936,9 +2217,18 @@
     dom.fileInput.addEventListener("change", () => handleFiles(dom.fileInput.files));
     dom.chooseBackgroundImageButton.addEventListener("click", () => dom.backgroundImageInput.click());
     dom.backgroundImageInput.addEventListener("change", () =>
-      handleBackgroundFile(dom.backgroundImageInput.files),
+      handleBackgroundFile(dom.backgroundImageInput.files, "inner"),
     );
-    dom.removeBackgroundImageButton.addEventListener("click", removeBackgroundImage);
+    dom.removeBackgroundImageButton.addEventListener("click", () => removeBackgroundImage("inner"));
+    dom.chooseOuterBackgroundImageButton.addEventListener("click", () =>
+      dom.outerBackgroundImageInput.click(),
+    );
+    dom.outerBackgroundImageInput.addEventListener("change", () =>
+      handleBackgroundFile(dom.outerBackgroundImageInput.files, "outer"),
+    );
+    dom.removeOuterBackgroundImageButton.addEventListener("click", () =>
+      removeBackgroundImage("outer"),
+    );
 
     dom.dropZone.addEventListener("dragover", (event) => {
       if (!event.dataTransfer?.types.includes("Files")) return;

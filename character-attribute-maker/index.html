@@ -255,33 +255,62 @@
             </div>
           </div>
 
-          <div class="preset-list" aria-label="背景プリセット">
-            <button class="preset-swatch is-active" type="button" data-preset="white" aria-pressed="true">
-              <span class="swatch swatch-white" aria-hidden="true"></span>
-              シンプル白
-            </button>
-            <button class="preset-swatch" type="button" data-preset="beige" aria-pressed="false">
-              <span class="swatch swatch-beige" aria-hidden="true"></span>
-              ベージュ
-            </button>
-            <button class="preset-swatch" type="button" data-preset="blue" aria-pressed="false">
-              <span class="swatch swatch-blue" aria-hidden="true"></span>
-              淡いブルー
-            </button>
-            <button class="preset-swatch" type="button" data-preset="green" aria-pressed="false">
-              <span class="swatch swatch-green" aria-hidden="true"></span>
-              淡いグリーン
-            </button>
-            <button class="preset-swatch" type="button" data-preset="gradient" aria-pressed="false">
-              <span class="swatch swatch-gradient" aria-hidden="true"></span>
-              グラデーション
-            </button>
-          </div>
-
           <div class="appearance-group">
-            <h3>背景</h3>
+            <h3>図の内側</h3>
+            <p id="innerBackgroundPresetLabel" class="field-label">背景プリセット</p>
+            <div
+              class="preset-list"
+              role="group"
+              aria-labelledby="innerBackgroundPresetLabel"
+            >
+              <button
+                class="preset-swatch is-active"
+                type="button"
+                data-preset="white"
+                aria-pressed="true"
+              >
+                <span class="swatch swatch-white" aria-hidden="true"></span>
+                シンプル白
+              </button>
+              <button
+                class="preset-swatch"
+                type="button"
+                data-preset="beige"
+                aria-pressed="false"
+              >
+                <span class="swatch swatch-beige" aria-hidden="true"></span>
+                ベージュ
+              </button>
+              <button
+                class="preset-swatch"
+                type="button"
+                data-preset="blue"
+                aria-pressed="false"
+              >
+                <span class="swatch swatch-blue" aria-hidden="true"></span>
+                淡いブルー
+              </button>
+              <button
+                class="preset-swatch"
+                type="button"
+                data-preset="green"
+                aria-pressed="false"
+              >
+                <span class="swatch swatch-green" aria-hidden="true"></span>
+                淡いグリーン
+              </button>
+              <button
+                class="preset-swatch"
+                type="button"
+                data-preset="gradient"
+                aria-pressed="false"
+              >
+                <span class="swatch swatch-gradient" aria-hidden="true"></span>
+                グラデーション
+              </button>
+            </div>
             <label class="field field-full">
-              <span>塗り方</span>
+              <span>内側の塗り方</span>
               <select id="backgroundModeInput">
                 <option value="solid">単色</option>
                 <option value="gradient">2色グラデーション</option>
@@ -292,7 +321,7 @@
 
             <div id="backgroundSolidFields" class="appearance-color-fields">
               <label class="field color-field">
-                <span>背景色</span>
+                <span>内側の背景色</span>
                 <span class="color-control">
                   <input id="backgroundColorInput" type="color" value="#fffdf8" />
                   <span id="backgroundColorValue">#FFFDF8</span>
@@ -323,17 +352,17 @@
                 class="visually-hidden"
                 type="file"
                 accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
-                aria-label="背景画像ファイルを選択"
+                aria-label="内側の背景画像ファイルを選択"
               />
               <button
                 id="chooseBackgroundImageButton"
                 class="button button-secondary"
                 type="button"
               >
-                背景画像を選択
+                内側の画像を選択
               </button>
               <p id="backgroundImageEmpty" class="appearance-note">
-                PNG・JPEG・WebPに対応。中央合わせでマップ全体に表示します。
+                PNG・JPEG・WebPに対応。マップの内側へ中央合わせで表示します。
               </p>
               <div id="backgroundImagePreview" class="background-image-preview" hidden>
                 <img id="backgroundImageThumbnail" alt="" />
@@ -345,7 +374,7 @@
                   id="removeBackgroundImageButton"
                   class="button button-quiet background-image-remove"
                   type="button"
-                  aria-label="背景画像を削除"
+                  aria-label="内側の背景画像を削除"
                 >
                   削除
                 </button>
@@ -353,9 +382,125 @@
             </div>
 
             <p id="backgroundTransparentHint" class="appearance-note transparent-note" hidden>
-              市松模様は編集時の目印です。PNGには透明な背景として保存されます。
+              市松模様は編集時の目印です。マップの内側は透明になります。
             </p>
+
+            <label id="backgroundOpacityField" class="field field-full">
+              <span class="range-label-row">
+                <span>内側背景の不透明度</span>
+                <output id="backgroundOpacityOutput" for="backgroundOpacityInput">100%</output>
+              </span>
+              <input
+                id="backgroundOpacityInput"
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value="100"
+                aria-label="内側背景の不透明度"
+                aria-describedby="backgroundOpacityHelp"
+              />
+              <small id="backgroundOpacityHelp" class="field-help">
+                画像・単色・グラデーションだけを薄くし、軸やキャラクターは薄くしません
+              </small>
+            </label>
           </div>
+
+          <fieldset
+            id="outerBackgroundGroup"
+            class="appearance-group appearance-fieldset"
+            aria-describedby="outerBackgroundHelp"
+            disabled
+          >
+            <legend>図の外側</legend>
+            <p id="outerBackgroundHelp" class="appearance-note">
+              「図の外側」レイアウトで使えます。内側を半透明にすると、この背景が透けて見えます。
+            </p>
+
+            <label class="field field-full">
+              <span>外側の塗り方</span>
+              <select id="outerBackgroundModeInput">
+                <option value="solid">単色</option>
+                <option value="gradient">2色グラデーション</option>
+                <option value="image">画像</option>
+                <option value="transparent">透過</option>
+              </select>
+            </label>
+
+            <div id="outerBackgroundSolidFields" class="appearance-color-fields">
+              <label class="field color-field">
+                <span>外側の背景色</span>
+                <span class="color-control">
+                  <input id="outerBackgroundColorInput" type="color" value="#eef2f0" />
+                  <span id="outerBackgroundColorValue">#EEF2F0</span>
+                </span>
+              </label>
+            </div>
+
+            <div
+              id="outerBackgroundGradientFields"
+              class="appearance-color-fields color-pair"
+              hidden
+            >
+              <label class="field color-field">
+                <span>開始色（左上）</span>
+                <span class="color-control">
+                  <input id="outerGradientStartInput" type="color" value="#f4eee2" />
+                  <span id="outerGradientStartValue">#F4EEE2</span>
+                </span>
+              </label>
+              <label class="field color-field">
+                <span>終了色（右下）</span>
+                <span class="color-control">
+                  <input id="outerGradientEndInput" type="color" value="#dfeeea" />
+                  <span id="outerGradientEndValue">#DFEEEA</span>
+                </span>
+              </label>
+            </div>
+
+            <div id="outerBackgroundImageFields" class="background-image-fields" hidden>
+              <input
+                id="outerBackgroundImageInput"
+                class="visually-hidden"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
+                aria-label="外側の背景画像ファイルを選択"
+              />
+              <button
+                id="chooseOuterBackgroundImageButton"
+                class="button button-secondary"
+                type="button"
+              >
+                外側の画像を選択
+              </button>
+              <p id="outerBackgroundImageEmpty" class="appearance-note">
+                PNG・JPEG・WebPに対応。出力全体へ中央合わせで表示します。
+              </p>
+              <div id="outerBackgroundImagePreview" class="background-image-preview" hidden>
+                <img id="outerBackgroundImageThumbnail" alt="" />
+                <div class="background-image-copy">
+                  <strong id="outerBackgroundImageName"></strong>
+                  <small>出力全体に合わせて中央から切り抜きます</small>
+                </div>
+                <button
+                  id="removeOuterBackgroundImageButton"
+                  class="button button-quiet background-image-remove"
+                  type="button"
+                  aria-label="外側の背景画像を削除"
+                >
+                  削除
+                </button>
+              </div>
+            </div>
+
+            <p
+              id="outerBackgroundTransparentHint"
+              class="appearance-note transparent-note"
+              hidden
+            >
+              外側の余白を透明にします。内側背景の不透明度はそのまま反映されます。
+            </p>
+          </fieldset>
 
           <div class="appearance-group">
             <h3>軸線</h3>
@@ -453,7 +598,7 @@
           <div class="export-options">
             <label class="checkbox-row">
               <input id="includeBackgroundInput" type="checkbox" checked />
-              <span>背景を含めて保存（オフで透過）</span>
+              <span>すべての背景を含めて保存（オフで背景を透過）</span>
             </label>
             <label class="field">
               <span>出力サイズ</span>
@@ -502,6 +647,7 @@
               role="region"
               aria-label="キャラクター画像を配置する二軸マップ"
             >
+              <div id="mapInnerBackground" class="map-inner-background" aria-hidden="true"></div>
               <div class="axis-line axis-horizontal" aria-hidden="true"></div>
               <div class="axis-line axis-vertical" aria-hidden="true"></div>
 
