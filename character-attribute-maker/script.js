@@ -115,6 +115,8 @@
     squareShapeButton: document.querySelector("#squareShapeButton"),
     circleShapeButton: document.querySelector("#circleShapeButton"),
     showNameInput: document.querySelector("#showNameInput"),
+    applyStyleToAllButton: document.querySelector("#applyStyleToAllButton"),
+    applyStyleToAllHelp: document.querySelector("#applyStyleToAllHelp"),
     duplicateButton: document.querySelector("#duplicateButton"),
     deleteButton: document.querySelector("#deleteButton"),
     backgroundModeInput: document.querySelector("#backgroundModeInput"),
@@ -1335,6 +1337,14 @@
     dom.showNameInput.checked = placement.showName;
     dom.squareShapeButton.setAttribute("aria-pressed", String(placement.shape === "square"));
     dom.circleShapeButton.setAttribute("aria-pressed", String(placement.shape === "circle"));
+    const placementCount = state.placements.length;
+    dom.applyStyleToAllButton.disabled = placementCount < 2;
+    dom.applyStyleToAllButton.textContent = placementCount > 1
+      ? `この見た目を全${placementCount}枚に適用`
+      : "この見た目を全画像に適用";
+    dom.applyStyleToAllHelp.textContent = placementCount > 1
+      ? `サイズ・枠・形状・名前表示を全${placementCount}枚へ反映します。名前は維持し、端からはみ出す場合だけ位置を調整します`
+      : "マップ上に2枚以上配置すると、見た目をまとめて適用できます";
   }
 
   function updateHistoryButtons() {
@@ -1599,6 +1609,46 @@
     commitBefore(before);
     renderPlacements();
     syncCharacterSettings();
+  }
+
+  function applySelectedStyleToAll() {
+    finishPendingEdit();
+    const source = getSelectedPlacement();
+    const placementCount = state.placements.length;
+    if (!source || placementCount < 2) return;
+
+    const confirmed = window.confirm(
+      `選択中の見た目を、マップ上の${placementCount}枚すべてに適用します。\n\n` +
+        "キャラクター名、基本の配置位置、重なり順は変更しません。サイズや名前表示によって端からはみ出す場合だけ、配置位置を内側へ調整します。よろしいですか？",
+    );
+    if (!confirmed) return;
+
+    const style = {
+      size: source.size,
+      borderColor: source.borderColor,
+      borderWidth: source.borderWidth,
+      shape: source.shape,
+      showName: source.showName,
+    };
+    const before = captureSnapshot();
+    for (const placement of state.placements) {
+      const layoutMayChange =
+        placement.size !== style.size ||
+        (!placement.showName && style.showName && Boolean(placement.name.trim()));
+      placement.size = style.size;
+      placement.borderColor = style.borderColor;
+      placement.borderWidth = style.borderWidth;
+      placement.shape = style.shape;
+      placement.showName = style.showName;
+      if (layoutMayChange) constrainPlacement(placement);
+    }
+
+    if (!commitBefore(before)) {
+      showToast("すべての画像はすでに同じ見た目です");
+      return;
+    }
+    renderAll();
+    showToast(`全${placementCount}枚の画像に見た目を適用しました`);
   }
 
   function setLabelLayout(layout) {
@@ -2366,6 +2416,7 @@
     dom.resetButton.addEventListener("click", resetEverything);
     dom.deleteButton.addEventListener("click", deleteSelected);
     dom.duplicateButton.addEventListener("click", duplicateSelected);
+    dom.applyStyleToAllButton.addEventListener("click", applySelectedStyleToAll);
     dom.squareShapeButton.addEventListener("click", () => setPlacementShape("square"));
     dom.circleShapeButton.addEventListener("click", () => setPlacementShape("circle"));
     dom.insideLabelLayoutButton.addEventListener("click", () => setLabelLayout("inside"));
