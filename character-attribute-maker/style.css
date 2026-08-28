@@ -435,6 +435,67 @@ button:disabled {
   font-size: 10px;
 }
 
+.library-actions {
+  display: grid;
+  margin-top: 12px;
+  padding: 10px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  gap: 9px;
+}
+
+.library-actions[hidden],
+.library-selection-actions[hidden],
+.library-action-row[hidden] {
+  display: none;
+}
+
+.library-action-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.library-actions .button {
+  min-height: 34px;
+  padding: 6px 8px;
+  font-size: 11px;
+}
+
+.library-selection-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.library-selection-summary {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.library-selection-summary strong {
+  color: var(--accent-dark);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.library-actions .library-cancel-button {
+  width: auto;
+  min-height: 30px;
+  padding: 4px 8px;
+  font-size: 10px;
+}
+
+.library-selection-help {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
 .library-empty,
 .selection-empty {
   margin: 12px 0 0;
@@ -456,6 +517,7 @@ button:disabled {
 .library-card {
   position: relative;
   display: block;
+  width: 100%;
   min-width: 0;
   padding: 3px;
   overflow: hidden;
@@ -471,6 +533,18 @@ button:disabled {
   border-color: var(--accent);
   box-shadow: 0 5px 13px rgba(47, 127, 115, 0.12);
   transform: translateY(-1px);
+}
+
+.library-card.is-selected {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(47, 127, 115, 0.2);
+}
+
+.library-card.is-selected:hover {
+  box-shadow:
+    0 0 0 2px rgba(47, 127, 115, 0.24),
+    0 5px 13px rgba(47, 127, 115, 0.12);
 }
 
 .library-card img {
@@ -498,6 +572,30 @@ button:disabled {
   font-weight: 700;
   line-height: 1;
   pointer-events: none;
+}
+
+.library-card-select {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  color: transparent;
+  background: #ffffff;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(38, 51, 47, 0.16);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.library-card.is-selected .library-card-select {
+  color: #ffffff;
+  background: var(--accent);
 }
 
 .character-settings {
@@ -1591,11 +1689,15 @@ kbd {
     padding: 18px 16px;
   }
 
+  .library-actions .button {
+    min-height: 40px;
+  }
+
   .image-library {
     width: 100%;
     max-width: 100%;
     overflow-x: auto;
-    padding: 2px 1px 8px;
+    padding: 6px 6px 8px;
     grid-auto-columns: 68px;
     grid-auto-flow: column;
     grid-template-columns: none;

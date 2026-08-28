@@ -94,6 +94,16 @@
     imageLibrary: document.querySelector("#imageLibrary"),
     libraryEmpty: document.querySelector("#libraryEmpty"),
     imageCount: document.querySelector("#imageCount"),
+    libraryActions: document.querySelector("#libraryActions"),
+    libraryDefaultActions: document.querySelector("#libraryDefaultActions"),
+    librarySelectionActions: document.querySelector("#librarySelectionActions"),
+    librarySelectionCount: document.querySelector("#librarySelectionCount"),
+    librarySelectionHelp: document.querySelector("#librarySelectionHelp"),
+    startLibrarySelectionButton: document.querySelector("#startLibrarySelectionButton"),
+    cancelLibrarySelectionButton: document.querySelector("#cancelLibrarySelectionButton"),
+    selectAllLibraryButton: document.querySelector("#selectAllLibraryButton"),
+    deleteSelectedLibraryButton: document.querySelector("#deleteSelectedLibraryButton"),
+    deleteAllLibraryButton: document.querySelector("#deleteAllLibraryButton"),
     selectionEmpty: document.querySelector("#selectionEmpty"),
     characterSettings: document.querySelector("#characterSettings"),
     characterNameInput: document.querySelector("#characterNameInput"),
@@ -192,6 +202,10 @@
   let toastTimer = 0;
   let preferenceTimer = 0;
   let resetEpoch = 0;
+  let libraryLoadGeneration = 0;
+  let libraryLoadRequestId = 0;
+  let librarySelectionMode = false;
+  const selectedLibraryAssetIds = new Set();
   const backgroundLoadRequests = { inner: 0, outer: 0 };
 
   function createDefaultState() {
@@ -396,6 +410,7 @@
 
   function restoreSnapshot(snapshot) {
     state = cloneData(snapshot);
+    resetLibrarySelectionState();
     const defaults = createDefaultState();
     if (!BACKGROUND_MODES.has(state.appearance.backgroundMode)) {
       state.appearance.backgroundMode = defaults.appearance.backgroundMode;
@@ -647,12 +662,14 @@
     }
 
     const epoch = resetEpoch;
+    const generation = libraryLoadGeneration;
+    const requestId = ++libraryLoadRequestId;
     dom.chooseFilesButton.disabled = true;
     dom.chooseFilesButton.textContent = "読み込み中…";
 
     try {
       const results = await Promise.allSettled(validFiles.map(readImageFile));
-      if (epoch !== resetEpoch) return;
+      if (epoch !== resetEpoch || generation !== libraryLoadGeneration) return;
 
       const before = captureSnapshot();
       const loadedAssets = [];
@@ -679,9 +696,11 @@
         showToast("画像を読み込めませんでした。ファイルを確認してください", true);
       }
     } finally {
-      dom.chooseFilesButton.disabled = false;
-      dom.chooseFilesButton.textContent = "ファイルを選択";
-      dom.fileInput.value = "";
+      if (requestId === libraryLoadRequestId) {
+        dom.chooseFilesButton.disabled = false;
+        dom.chooseFilesButton.textContent = "ファイルを選択";
+        dom.fileInput.value = "";
+      }
     }
   }
 
@@ -1046,7 +1065,122 @@
     }
   }
 
+  function resetLibrarySelectionState() {
+    librarySelectionMode = false;
+    selectedLibraryAssetIds.clear();
+  }
+
+  function setLibrarySelectionMode(enabled) {
+    librarySelectionMode = Boolean(enabled && state.libraryIds.length);
+    selectedLibraryAssetIds.clear();
+    renderLibrary();
+
+    if (librarySelectionMode) {
+      dom.imageLibrary.querySelector(".library-card")?.focus();
+    } else if (state.libraryIds.length) {
+      dom.startLibrarySelectionButton.focus();
+    }
+  }
+
+  function toggleLibraryAssetSelection(assetId) {
+    if (!librarySelectionMode || !state.libraryIds.includes(assetId)) return;
+    if (selectedLibraryAssetIds.has(assetId)) selectedLibraryAssetIds.delete(assetId);
+    else selectedLibraryAssetIds.add(assetId);
+    renderLibrary();
+    dom.imageLibrary.querySelector(`[data-asset-id="${assetId}"]`)?.focus();
+  }
+
+  function toggleAllLibraryAssets() {
+    if (!librarySelectionMode || !state.libraryIds.length) return;
+    const allSelected = selectedLibraryAssetIds.size === state.libraryIds.length;
+    selectedLibraryAssetIds.clear();
+    if (!allSelected) {
+      for (const assetId of state.libraryIds) selectedLibraryAssetIds.add(assetId);
+    }
+    renderLibrary();
+    dom.selectAllLibraryButton.focus();
+  }
+
+  function deleteLibraryAssets(assetIds, deleteAll = false) {
+    const requestedIds = new Set(assetIds || []);
+    const existingIds = state.libraryIds.filter((assetId) => requestedIds.has(assetId));
+    if (!existingIds.length) return false;
+
+    const deletingIds = new Set(existingIds);
+    const placementCount = state.placements.filter((placement) =>
+      deletingIds.has(placement.assetId),
+    ).length;
+    const imageDescription = deleteAll
+      ? `追加した${existingIds.length}枚をすべて削除します。`
+      : `選択した${existingIds.length}枚を画像一覧から削除します。`;
+    const placementDescription = placementCount
+      ? `マップ上の${placementCount}個の配置も削除されます。`
+      : "マップ上の配置は削除されません。";
+    const settingsDescription = deleteAll
+      ? "軸・背景・タイトルなどの設定は残ります。\n\n"
+      : "";
+    const confirmed = window.confirm(
+      `${imageDescription}\n${placementDescription}\n${settingsDescription}「元に戻す」で復元できます。よろしいですか？`,
+    );
+    if (!confirmed) return false;
+
+    finishPendingEdit();
+    const before = captureSnapshot();
+    if (existingIds.length === state.libraryIds.length) {
+      libraryLoadGeneration += 1;
+      libraryLoadRequestId += 1;
+      dom.fileInput.value = "";
+      dom.chooseFilesButton.disabled = false;
+      dom.chooseFilesButton.textContent = "ファイルを選択";
+    }
+    state.libraryIds = state.libraryIds.filter((assetId) => !deletingIds.has(assetId));
+    state.placements = state.placements.filter(
+      (placement) => !deletingIds.has(placement.assetId),
+    );
+    if (!state.placements.some((placement) => placement.id === selectedId)) selectedId = null;
+    resetLibrarySelectionState();
+    commitBefore(before);
+    renderAll();
+
+    const message = placementCount
+      ? `${existingIds.length}枚の画像とマップ上の${placementCount}個の配置を削除しました`
+      : `${existingIds.length}枚の画像を削除しました`;
+    showToast(message);
+    if (state.libraryIds.length) dom.startLibrarySelectionButton.focus();
+    else dom.chooseFilesButton.focus();
+    return true;
+  }
+
   function renderLibrary() {
+    const currentLibraryIds = new Set(state.libraryIds);
+    for (const assetId of selectedLibraryAssetIds) {
+      if (!currentLibraryIds.has(assetId)) selectedLibraryAssetIds.delete(assetId);
+    }
+    if (!state.libraryIds.length) resetLibrarySelectionState();
+
+    const hasImages = state.libraryIds.length > 0;
+    const allSelected =
+      hasImages && selectedLibraryAssetIds.size === state.libraryIds.length;
+    dom.libraryActions.hidden = !hasImages;
+    dom.libraryDefaultActions.hidden = librarySelectionMode;
+    dom.librarySelectionActions.hidden = !librarySelectionMode;
+    dom.librarySelectionCount.textContent = `${selectedLibraryAssetIds.size}枚選択中`;
+    dom.selectAllLibraryButton.textContent = allSelected ? "すべて解除" : "すべて選択";
+    dom.deleteSelectedLibraryButton.disabled = selectedLibraryAssetIds.size === 0;
+    dom.deleteSelectedLibraryButton.textContent = selectedLibraryAssetIds.size
+      ? `選択を削除（${selectedLibraryAssetIds.size}）`
+      : "選択を削除";
+    dom.imageLibrary.classList.toggle("is-selecting", librarySelectionMode);
+    dom.imageLibrary.setAttribute(
+      "aria-label",
+      librarySelectionMode ? "削除する画像を選択" : "アップロードした画像",
+    );
+    if (librarySelectionMode) {
+      dom.imageLibrary.setAttribute("aria-describedby", "librarySelectionHelp");
+    } else {
+      dom.imageLibrary.removeAttribute("aria-describedby");
+    }
+
     dom.imageLibrary.textContent = "";
     const fragment = document.createDocumentFragment();
 
@@ -1060,28 +1194,38 @@
       const button = document.createElement("button");
       button.type = "button";
       button.className = "library-card";
-      button.draggable = true;
+      const isSelected = selectedLibraryAssetIds.has(assetId);
+      button.classList.toggle("is-selection-mode", librarySelectionMode);
+      button.classList.toggle("is-selected", isSelected);
+      button.draggable = !librarySelectionMode;
       button.dataset.assetId = assetId;
-      button.title = `${asset.fileName}をマップへ配置`;
-      button.setAttribute("aria-label", `${asset.fileName}をマップへ配置`);
+      if (librarySelectionMode) {
+        const action = isSelected ? "の選択を解除" : "を削除対象に選択";
+        button.title = `${asset.fileName}${action}`;
+        button.setAttribute("aria-label", `${asset.fileName}${action}`);
+        button.setAttribute("aria-pressed", String(isSelected));
+      } else {
+        button.title = `${asset.fileName}をマップへ配置`;
+        button.setAttribute("aria-label", `${asset.fileName}をマップへ配置`);
+      }
 
       const image = document.createElement("img");
       image.src = asset.src;
       image.alt = "";
       image.draggable = false;
 
-      const addMark = document.createElement("span");
-      addMark.className = "library-card-add";
-      addMark.textContent = "+";
-      addMark.setAttribute("aria-hidden", "true");
+      const cardMark = document.createElement("span");
+      cardMark.className = librarySelectionMode ? "library-card-select" : "library-card-add";
+      cardMark.textContent = librarySelectionMode ? "✓" : "+";
+      cardMark.setAttribute("aria-hidden", "true");
 
-      button.append(image, addMark);
+      button.append(image, cardMark);
       item.append(button);
       fragment.append(item);
     }
 
     dom.imageLibrary.append(fragment);
-    dom.libraryEmpty.hidden = state.libraryIds.length > 0;
+    dom.libraryEmpty.hidden = hasImages;
     dom.imageCount.textContent = `${state.libraryIds.length}枚`;
   }
 
@@ -1353,6 +1497,12 @@
   }
 
   function handleKeyboard(event) {
+    if (event.key === "Escape" && librarySelectionMode) {
+      event.preventDefault();
+      setLibrarySelectionMode(false);
+      return;
+    }
+
     const typing = isTypingTarget(event.target);
     const modifier = event.ctrlKey || event.metaKey;
 
@@ -1372,6 +1522,14 @@
     }
 
     if (typing) return;
+
+    if (librarySelectionMode) {
+      if (event.key === "Delete" || event.key === "Backspace") {
+        event.preventDefault();
+        showToast("画像一覧の「選択を削除」ボタンを使ってください");
+      }
+      return;
+    }
 
     const focusedNode = event.target.closest?.(".character-node");
     if (focusedNode && (event.key === "Enter" || event.key === " ")) {
@@ -1403,16 +1561,21 @@
     if (!confirmed) return;
 
     resetEpoch += 1;
+    libraryLoadGeneration += 1;
+    libraryLoadRequestId += 1;
     backgroundLoadRequests.inner += 1;
     backgroundLoadRequests.outer += 1;
     finishPendingEdit();
     assets.clear();
     state = createDefaultState();
     selectedId = null;
+    resetLibrarySelectionState();
     interaction = null;
     undoStack.length = 0;
     redoStack.length = 0;
     dom.fileInput.value = "";
+    dom.chooseFilesButton.disabled = false;
+    dom.chooseFilesButton.textContent = "ファイルを選択";
     dom.backgroundImageInput.value = "";
     dom.outerBackgroundImageInput.value = "";
     dom.chooseBackgroundImageButton.disabled = false;
@@ -2215,6 +2378,19 @@
 
     dom.chooseFilesButton.addEventListener("click", () => dom.fileInput.click());
     dom.fileInput.addEventListener("change", () => handleFiles(dom.fileInput.files));
+    dom.startLibrarySelectionButton.addEventListener("click", () =>
+      setLibrarySelectionMode(true),
+    );
+    dom.cancelLibrarySelectionButton.addEventListener("click", () =>
+      setLibrarySelectionMode(false),
+    );
+    dom.selectAllLibraryButton.addEventListener("click", toggleAllLibraryAssets);
+    dom.deleteSelectedLibraryButton.addEventListener("click", () =>
+      deleteLibraryAssets(selectedLibraryAssetIds),
+    );
+    dom.deleteAllLibraryButton.addEventListener("click", () =>
+      deleteLibraryAssets(state.libraryIds, true),
+    );
     dom.chooseBackgroundImageButton.addEventListener("click", () => dom.backgroundImageInput.click());
     dom.backgroundImageInput.addEventListener("change", () =>
       handleBackgroundFile(dom.backgroundImageInput.files, "inner"),
@@ -2248,11 +2424,18 @@
 
     dom.imageLibrary.addEventListener("click", (event) => {
       const card = event.target.closest("[data-asset-id]");
-      if (card) addPlacement(card.dataset.assetId);
+      if (!card) return;
+      if (librarySelectionMode) toggleLibraryAssetSelection(card.dataset.assetId);
+      else addPlacement(card.dataset.assetId);
     });
     dom.imageLibrary.addEventListener("dragstart", (event) => {
       const card = event.target.closest("[data-asset-id]");
-      if (!card || !event.dataTransfer) return;
+      if (!card) return;
+      if (librarySelectionMode) {
+        event.preventDefault();
+        return;
+      }
+      if (!event.dataTransfer) return;
       event.dataTransfer.effectAllowed = "copy";
       event.dataTransfer.setData("application/x-character-asset", card.dataset.assetId);
       event.dataTransfer.setData("text/plain", card.dataset.assetId);

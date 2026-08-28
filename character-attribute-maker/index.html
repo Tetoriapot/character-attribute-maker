@@ -156,6 +156,60 @@
             <small>PNG・JPEG・WebP／複数選択できます</small>
           </div>
 
+          <div id="libraryActions" class="library-actions" hidden>
+            <div id="libraryDefaultActions" class="library-action-row">
+              <button
+                id="startLibrarySelectionButton"
+                class="button button-secondary button-compact"
+                type="button"
+                aria-controls="imageLibrary"
+              >
+                選択して削除
+              </button>
+              <button
+                id="deleteAllLibraryButton"
+                class="button button-danger button-compact"
+                type="button"
+                aria-label="追加した画像をすべて削除"
+              >
+                すべて削除
+              </button>
+            </div>
+
+            <div id="librarySelectionActions" class="library-selection-actions" hidden>
+              <div class="library-selection-summary">
+                <strong id="librarySelectionCount" aria-live="polite">0枚選択中</strong>
+                <button
+                  id="cancelLibrarySelectionButton"
+                  class="button button-quiet library-cancel-button"
+                  type="button"
+                >
+                  キャンセル
+                </button>
+              </div>
+              <p id="librarySelectionHelp" class="library-selection-help">
+                削除したい画像をクリックして選択してください。
+              </p>
+              <div class="library-action-row">
+                <button
+                  id="selectAllLibraryButton"
+                  class="button button-secondary button-compact"
+                  type="button"
+                >
+                  すべて選択
+                </button>
+                <button
+                  id="deleteSelectedLibraryButton"
+                  class="button button-danger button-compact"
+                  type="button"
+                  disabled
+                >
+                  選択を削除
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div id="libraryEmpty" class="library-empty">
             追加した画像がここに並びます。クリックするとマップ中央へ配置できます。
           </div>
