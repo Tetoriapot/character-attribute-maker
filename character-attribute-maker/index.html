@@ -757,39 +757,110 @@
           </div>
         </div>
 
-        <div class="map-frame">
-          <div id="mapComposition" class="map-composition">
-            <div id="mapTitleDisplay" class="map-title" hidden></div>
-            <div id="topAxisLabel" class="axis-label axis-label-top">善</div>
-            <div id="bottomAxisLabel" class="axis-label axis-label-bottom">悪</div>
-            <div id="leftAxisLabel" class="axis-label axis-label-left">混沌</div>
-            <div id="rightAxisLabel" class="axis-label axis-label-right">秩序</div>
+        <div class="map-view-toolbar" role="group" aria-label="属性マップの表示倍率">
+          <span class="map-view-label">表示倍率</span>
+          <button
+            id="zoomOutButton"
+            class="button button-secondary map-zoom-step"
+            type="button"
+            aria-label="属性マップを縮小"
+            title="10%縮小"
+          >
+            <span aria-hidden="true">−</span>
+          </button>
+          <label class="map-zoom-range">
+            <span class="visually-hidden">属性マップの表示倍率</span>
+            <input
+              id="mapZoomInput"
+              type="range"
+              min="25"
+              max="200"
+              step="1"
+              value="100"
+              aria-describedby="mapZoomHelp"
+            />
+          </label>
+          <output id="mapZoomOutput" class="map-zoom-output" for="mapZoomInput">100%</output>
+          <button
+            id="zoomInButton"
+            class="button button-secondary map-zoom-step"
+            type="button"
+            aria-label="属性マップを拡大"
+            title="10%拡大"
+          >
+            <span aria-hidden="true">＋</span>
+          </button>
+          <button
+            id="actualSizeButton"
+            class="button button-quiet map-view-action"
+            type="button"
+            aria-label="属性マップを100%で表示"
+          >
+            100%
+          </button>
+          <button
+            id="fitMapButton"
+            class="button button-secondary map-view-action"
+            type="button"
+            aria-pressed="true"
+          >
+            ウィンドウに合わせる
+          </button>
+        </div>
+        <p id="mapZoomHelp" class="map-view-help">
+          表示倍率は編集画面だけに反映され、PNGの出力サイズには影響しません。
+        </p>
 
-            <div
-              id="mapStage"
-              class="map-stage"
-              tabindex="0"
-              role="region"
-              aria-label="キャラクター画像を配置する二軸マップ"
-            >
-              <div id="mapInnerBackground" class="map-inner-background" aria-hidden="true"></div>
-              <div class="axis-line axis-horizontal" aria-hidden="true">
-                <span class="axis-shaft"></span>
-              </div>
-              <div class="axis-line axis-vertical" aria-hidden="true">
-                <span class="axis-shaft"></span>
-              </div>
+        <div
+          id="mapViewport"
+          class="map-viewport"
+          tabindex="0"
+          role="region"
+          aria-label="属性マップの表示領域、現在100%"
+          aria-describedby="mapZoomHelp"
+        >
+          <div class="map-viewport-inner">
+            <div id="mapFrame" class="map-frame">
+              <div id="mapComposition" class="map-composition">
+                <div id="mapTitleDisplay" class="map-title" hidden></div>
+                <div id="topAxisLabel" class="axis-label axis-label-top">善</div>
+                <div id="bottomAxisLabel" class="axis-label axis-label-bottom">悪</div>
+                <div id="leftAxisLabel" class="axis-label axis-label-left">混沌</div>
+                <div id="rightAxisLabel" class="axis-label axis-label-right">秩序</div>
 
-              <div id="mapEmptyHint" class="map-empty-hint" aria-hidden="true">
-                <span class="map-empty-icon">＋</span>
-                <strong>画像を配置してみましょう</strong>
-                <small>左のサムネイルをクリック、またはここへドラッグ</small>
-              </div>
+                <div
+                  id="mapStage"
+                  class="map-stage"
+                  tabindex="0"
+                  role="region"
+                  aria-label="キャラクター画像を配置する二軸マップ"
+                >
+                  <div
+                    id="mapInnerBackground"
+                    class="map-inner-background"
+                    aria-hidden="true"
+                  ></div>
+                  <div class="axis-line axis-horizontal" aria-hidden="true">
+                    <span class="axis-shaft"></span>
+                  </div>
+                  <div class="axis-line axis-vertical" aria-hidden="true">
+                    <span class="axis-shaft"></span>
+                  </div>
 
-              <div id="placementLayer" class="placement-layer"></div>
+                  <div id="mapEmptyHint" class="map-empty-hint" aria-hidden="true">
+                    <span class="map-empty-icon">＋</span>
+                    <strong>画像を配置してみましょう</strong>
+                    <small>左のサムネイルをクリック、またはここへドラッグ</small>
+                  </div>
+
+                  <div id="placementLayer" class="placement-layer"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+
+        <span id="mapZoomStatus" class="visually-hidden" role="status" aria-live="polite"></span>
 
         <p id="selectionStatus" class="selection-status" aria-live="polite">
           画像はまだ配置されていません。

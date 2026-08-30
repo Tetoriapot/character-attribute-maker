@@ -22,6 +22,13 @@
   const AXIS_OPACITY_MAX = 100;
   const BACKGROUND_OPACITY_MIN = 0;
   const BACKGROUND_OPACITY_MAX = 100;
+  const MAP_ZOOM_MIN = 25;
+  const MAP_ZOOM_MAX = 200;
+  const MAP_ZOOM_STEP = 10;
+  const MAP_VIEWPORT_MIN_HEIGHT = 280;
+  const MAP_VIEWPORT_MAX_HEIGHT = 832;
+  const MAP_VIEWPORT_MOBILE_MAX_HEIGHT = 620;
+  const MAP_VIEWPORT_MOBILE_RATIO = 0.72;
   const OUTSIDE_VERTICAL_LABEL_MAX_CHARACTERS = 11;
   const OUTSIDE_PLOT_RECT = Object.freeze({ x: 100, y: 134, size: 600 });
   const OUTSIDE_PLOT_BOUNDARY_COLOR = "#71827c";
@@ -195,6 +202,18 @@
     includeBackgroundInput: document.querySelector("#includeBackgroundInput"),
     exportScaleInput: document.querySelector("#exportScaleInput"),
     exportButton: document.querySelector("#exportButton"),
+    canvasPanel: document.querySelector(".canvas-panel"),
+    canvasPanelHeader: document.querySelector(".canvas-panel-header"),
+    mapViewToolbar: document.querySelector(".map-view-toolbar"),
+    zoomOutButton: document.querySelector("#zoomOutButton"),
+    mapZoomInput: document.querySelector("#mapZoomInput"),
+    mapZoomOutput: document.querySelector("#mapZoomOutput"),
+    zoomInButton: document.querySelector("#zoomInButton"),
+    actualSizeButton: document.querySelector("#actualSizeButton"),
+    fitMapButton: document.querySelector("#fitMapButton"),
+    mapViewport: document.querySelector("#mapViewport"),
+    mapFrame: document.querySelector("#mapFrame"),
+    mapZoomStatus: document.querySelector("#mapZoomStatus"),
     mapComposition: document.querySelector("#mapComposition"),
     mapStage: document.querySelector("#mapStage"),
     mapInnerBackground: document.querySelector("#mapInnerBackground"),
@@ -220,8 +239,14 @@
   let libraryLoadGeneration = 0;
   let libraryLoadRequestId = 0;
   let librarySelectionMode = false;
+  let mapViewZoom = 100;
+  let mapViewMode = "fit";
+  let mapViewLayoutFrame = 0;
+  let mapViewScrollFrame = 0;
+  let pendingMapViewCenterRatio = null;
   const selectedLibraryAssetIds = new Set();
   const backgroundLoadRequests = { inner: 0, outer: 0 };
+  const mapViewObservers = [];
 
   function createDefaultState() {
     return {
@@ -571,6 +596,174 @@
 
   function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
+  }
+
+  function pixelValue(style, property) {
+    return Number.parseFloat(style[property]) || 0;
+  }
+
+  function updateMapScale(width = dom.mapStage.clientWidth) {
+    const measuredWidth = width || dom.mapStage.clientWidth || MAP_SIZE;
+    dom.mapStage.style.setProperty("--map-scale", String(measuredWidth / MAP_SIZE));
+  }
+
+  function getMapViewCenterRatio() {
+    const mapRect = dom.mapComposition.getBoundingClientRect();
+    const viewportRect = dom.mapViewport.getBoundingClientRect();
+    if (!mapRect.width || !mapRect.height) return { x: 0.5, y: 0.5 };
+    const viewportCenterX =
+      viewportRect.left + dom.mapViewport.clientLeft + dom.mapViewport.clientWidth / 2;
+    const viewportCenterY =
+      viewportRect.top + dom.mapViewport.clientTop + dom.mapViewport.clientHeight / 2;
+    return {
+      x: clamp((viewportCenterX - mapRect.left) / mapRect.width, 0, 1),
+      y: clamp((viewportCenterY - mapRect.top) / mapRect.height, 0, 1),
+    };
+  }
+
+  function restoreMapViewCenter(centerRatio) {
+    window.cancelAnimationFrame(mapViewScrollFrame);
+    pendingMapViewCenterRatio = centerRatio;
+    mapViewScrollFrame = window.requestAnimationFrame(() => {
+      mapViewScrollFrame = 0;
+      const mapRect = dom.mapComposition.getBoundingClientRect();
+      const viewportRect = dom.mapViewport.getBoundingClientRect();
+      const viewportCenterX =
+        viewportRect.left + dom.mapViewport.clientLeft + dom.mapViewport.clientWidth / 2;
+      const viewportCenterY =
+        viewportRect.top + dom.mapViewport.clientTop + dom.mapViewport.clientHeight / 2;
+      const mapPointX = mapRect.left + mapRect.width * centerRatio.x;
+      const mapPointY = mapRect.top + mapRect.height * centerRatio.y;
+      dom.mapViewport.scrollLeft += mapPointX - viewportCenterX;
+      dom.mapViewport.scrollTop += mapPointY - viewportCenterY;
+      if (pendingMapViewCenterRatio === centerRatio) pendingMapViewCenterRatio = null;
+    });
+  }
+
+  function renderMapViewControls() {
+    const roundedZoom = Math.round(mapViewZoom);
+    const zoomText = `${roundedZoom}%`;
+    dom.mapZoomInput.value = String(roundedZoom);
+    dom.mapZoomInput.setAttribute("aria-valuetext", `${roundedZoom}パーセント`);
+    dom.mapZoomOutput.textContent = zoomText;
+    dom.zoomOutButton.disabled = roundedZoom <= MAP_ZOOM_MIN;
+    dom.zoomInButton.disabled = roundedZoom >= MAP_ZOOM_MAX;
+    dom.fitMapButton.setAttribute("aria-pressed", String(mapViewMode === "fit"));
+    dom.mapViewport.setAttribute(
+      "aria-label",
+      `属性マップの表示領域、現在${zoomText}${mapViewMode === "fit" ? "、ウィンドウに合わせて表示中" : ""}`,
+    );
+  }
+
+  function announceMapView(message) {
+    dom.mapZoomStatus.textContent = "";
+    window.requestAnimationFrame(() => {
+      dom.mapZoomStatus.textContent = message;
+    });
+  }
+
+  function setMapViewZoom(
+    zoom,
+    { mode = "manual", announce = false, preserveCenter = true } = {},
+  ) {
+    const nextZoom = clamp(Math.round(Number(zoom) || 100), MAP_ZOOM_MIN, MAP_ZOOM_MAX);
+    const centerRatio = preserveCenter
+      ? pendingMapViewCenterRatio || getMapViewCenterRatio()
+      : { x: 0.5, y: 0.5 };
+    mapViewZoom = nextZoom;
+    mapViewMode = mode;
+    const scale = nextZoom / 100;
+    dom.mapComposition.style.setProperty("--map-display-size", `${MAP_SIZE * scale}px`);
+    dom.mapComposition.style.setProperty("--map-view-scale", String(scale));
+    renderMapViewControls();
+    updateMapScale();
+    restoreMapViewCenter(centerRatio);
+    if (announce) {
+      const message =
+        mode === "fit"
+          ? `属性マップをウィンドウに合わせました。表示倍率は${nextZoom}パーセントです。`
+          : `属性マップの表示倍率を${nextZoom}パーセントにしました。`;
+      announceMapView(message);
+    }
+  }
+
+  function calculateMapViewportHeight() {
+    const visualViewport = window.visualViewport;
+    const visibleHeight = visualViewport?.height || document.documentElement.clientHeight;
+    if (window.matchMedia("(max-width: 880px)").matches) {
+      return clamp(
+        Math.floor(visibleHeight * MAP_VIEWPORT_MOBILE_RATIO),
+        MAP_VIEWPORT_MIN_HEIGHT,
+        MAP_VIEWPORT_MOBILE_MAX_HEIGHT,
+      );
+    }
+
+    const visibleBottom = visualViewport
+      ? visualViewport.offsetTop + visualViewport.height
+      : document.documentElement.clientHeight;
+    const viewportTop = dom.mapViewport.getBoundingClientRect().top;
+    const statusStyle = window.getComputedStyle(dom.selectionStatus);
+    const panelStyle = window.getComputedStyle(dom.canvasPanel);
+    const reservedBelow =
+      dom.selectionStatus.offsetHeight +
+      pixelValue(statusStyle, "marginTop") +
+      pixelValue(statusStyle, "marginBottom") +
+      pixelValue(panelStyle, "paddingBottom") +
+      pixelValue(panelStyle, "borderBottomWidth") +
+      4;
+    return clamp(
+      Math.floor(visibleBottom - viewportTop - reservedBelow),
+      MAP_VIEWPORT_MIN_HEIGHT,
+      MAP_VIEWPORT_MAX_HEIGHT,
+    );
+  }
+
+  function calculateFitZoom() {
+    const frameStyle = window.getComputedStyle(dom.mapFrame);
+    const viewportWidth = dom.mapViewport.clientWidth;
+    const viewportHeight = dom.mapViewport.clientHeight;
+    const frameChromeWidth =
+      pixelValue(frameStyle, "paddingLeft") +
+      pixelValue(frameStyle, "paddingRight") +
+      pixelValue(frameStyle, "borderLeftWidth") +
+      pixelValue(frameStyle, "borderRightWidth");
+    const frameChromeHeight =
+      pixelValue(frameStyle, "paddingTop") +
+      pixelValue(frameStyle, "paddingBottom") +
+      pixelValue(frameStyle, "borderTopWidth") +
+      pixelValue(frameStyle, "borderBottomWidth");
+    const widthScale = Math.max(0, viewportWidth - frameChromeWidth - 2) / MAP_SIZE;
+    const heightScale = Math.max(0, viewportHeight - frameChromeHeight - 2) / MAP_SIZE;
+    return clamp(
+      Math.floor(Math.min(widthScale, heightScale, 1) * 100),
+      MAP_ZOOM_MIN,
+      100,
+    );
+  }
+
+  function refreshMapView({ announce = false } = {}) {
+    dom.mapViewport.style.height = `${calculateMapViewportHeight()}px`;
+    if (mapViewMode === "fit") {
+      setMapViewZoom(calculateFitZoom(), {
+        mode: "fit",
+        announce,
+        preserveCenter: false,
+      });
+    } else {
+      renderMapViewControls();
+    }
+  }
+
+  function scheduleMapViewRefresh() {
+    if (mapViewLayoutFrame) return;
+    mapViewLayoutFrame = window.requestAnimationFrame(() => {
+      mapViewLayoutFrame = 0;
+      refreshMapView();
+    });
+  }
+
+  function adjustMapViewZoom(amount) {
+    setMapViewZoom(mapViewZoom + amount, { mode: "manual", announce: true });
   }
 
   function normalizeRangeValue(value, min, max, step = 1) {
@@ -1652,6 +1845,13 @@
       return;
     }
 
+    if (
+      event.target === dom.mapViewport &&
+      ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)
+    ) {
+      return;
+    }
+
     if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key) && selectedId) {
       event.preventDefault();
       moveSelectedByKeyboard(event.key, event.shiftKey ? 16 : 3);
@@ -2589,6 +2789,46 @@
     );
   }
 
+  function configureMapView() {
+    dom.zoomOutButton.addEventListener("click", () => adjustMapViewZoom(-MAP_ZOOM_STEP));
+    dom.zoomInButton.addEventListener("click", () => adjustMapViewZoom(MAP_ZOOM_STEP));
+    dom.actualSizeButton.addEventListener("click", () => {
+      setMapViewZoom(100, { mode: "manual", announce: true });
+    });
+    dom.fitMapButton.addEventListener("click", () => {
+      mapViewMode = "fit";
+      refreshMapView({ announce: true });
+    });
+    dom.mapZoomInput.addEventListener("input", () => {
+      setMapViewZoom(dom.mapZoomInput.value, { mode: "manual" });
+    });
+    dom.mapZoomInput.addEventListener("change", () => {
+      announceMapView(`属性マップの表示倍率を${Math.round(mapViewZoom)}パーセントにしました。`);
+    });
+
+    if ("ResizeObserver" in window) {
+      let lastViewportWidth = 0;
+      const viewportObserver = new ResizeObserver((entries) => {
+        const width = entries[0]?.contentRect.width || 0;
+        if (Math.abs(width - lastViewportWidth) < 0.5) return;
+        lastViewportWidth = width;
+        scheduleMapViewRefresh();
+      });
+      viewportObserver.observe(dom.mapViewport);
+      mapViewObservers.push(viewportObserver);
+
+      const surroundingLayoutObserver = new ResizeObserver(scheduleMapViewRefresh);
+      surroundingLayoutObserver.observe(dom.canvasPanelHeader);
+      surroundingLayoutObserver.observe(dom.mapViewToolbar);
+      surroundingLayoutObserver.observe(dom.selectionStatus);
+      mapViewObservers.push(surroundingLayoutObserver);
+    }
+
+    window.addEventListener("resize", scheduleMapViewRefresh);
+    window.visualViewport?.addEventListener("resize", scheduleMapViewRefresh);
+    refreshMapView();
+  }
+
   function configureEvents() {
     configureInputs();
 
@@ -2719,9 +2959,6 @@
 
     document.addEventListener("keydown", handleKeyboard);
 
-    const updateMapScale = (width = dom.mapStage.getBoundingClientRect().width) => {
-      dom.mapStage.style.setProperty("--map-scale", String((width || MAP_SIZE) / MAP_SIZE));
-    };
     updateMapScale();
     if ("ResizeObserver" in window) {
       const resizeObserver = new ResizeObserver((entries) => {
@@ -2736,4 +2973,5 @@
   loadPreferences();
   configureEvents();
   renderAll();
+  configureMapView();
 })();
