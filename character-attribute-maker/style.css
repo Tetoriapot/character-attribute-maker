@@ -1120,6 +1120,7 @@ kbd {
   --map-axis-horizontal: #71827c;
   --map-axis-vertical: #71827c;
   --map-axis-inset: 8%;
+  --map-boundary-color: #71827c;
   --map-text-color: #26332f;
   --map-font-family: "Yu Gothic UI", "Yu Gothic", Meiryo, sans-serif;
   position: relative;
@@ -1181,7 +1182,7 @@ kbd {
   position: absolute;
   inset: 0;
   z-index: 6;
-  box-shadow: inset 0 0 0 2px var(--map-axis-start-color);
+  box-shadow: inset 0 0 0 2px var(--map-boundary-color);
   opacity: 0.72;
   pointer-events: none;
   content: "";

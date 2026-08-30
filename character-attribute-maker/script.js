@@ -18,6 +18,7 @@
   const BACKGROUND_OPACITY_MAX = 100;
   const OUTSIDE_VERTICAL_LABEL_MAX_CHARACTERS = 11;
   const OUTSIDE_PLOT_RECT = Object.freeze({ x: 100, y: 134, size: 600 });
+  const OUTSIDE_PLOT_BOUNDARY_COLOR = "#71827c";
   const TRANSPARENCY_GRID =
     "linear-gradient(45deg, #e4e9e7 25%, transparent 25%), " +
     "linear-gradient(-45deg, #e4e9e7 25%, transparent 25%), " +
@@ -2033,7 +2034,7 @@
     if (isOutsideLayout) {
       context.save();
       context.globalAlpha = 0.72;
-      context.strokeStyle = axisColors.start;
+      context.strokeStyle = OUTSIDE_PLOT_BOUNDARY_COLOR;
       context.lineWidth = 2;
       context.strokeRect(
         plotRect.x + 1,
