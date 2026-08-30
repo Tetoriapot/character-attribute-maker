@@ -8,6 +8,8 @@
   const CAPTION_SPACE = 34;
   const HISTORY_LIMIT = 60;
   const PREFERENCES_KEY = "character-attribute-maker-preferences-v1";
+  const UPDATES_SEEN_KEY = "character-attribute-maker-updates-seen-v1";
+  const CURRENT_UPDATE_VERSION = "2026-08-30-help-and-spacing";
   const SUPPORTED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
   const SUPPORTED_EXTENSIONS = /\.(png|jpe?g|webp)$/i;
   const BACKGROUND_MODES = new Set(["solid", "gradient", "image", "transparent"]);
@@ -85,6 +87,11 @@
   };
 
   const dom = {
+    helpButton: document.querySelector("#helpButton"),
+    updatesButton: document.querySelector("#updatesButton"),
+    updatesNewBadge: document.querySelector("#updatesNewBadge"),
+    helpDialog: document.querySelector("#helpDialog"),
+    updatesDialog: document.querySelector("#updatesDialog"),
     undoButton: document.querySelector("#undoButton"),
     redoButton: document.querySelector("#redoButton"),
     resetButton: document.querySelector("#resetButton"),
@@ -247,6 +254,7 @@
   const selectedLibraryAssetIds = new Set();
   const backgroundLoadRequests = { inner: 0, outer: 0 };
   const mapViewObservers = [];
+  const dialogOpeners = new WeakMap();
 
   function createDefaultState() {
     return {
@@ -1669,6 +1677,126 @@
     toastTimer = window.setTimeout(() => dom.toast.classList.remove("is-visible"), 2600);
   }
 
+  function updatesHaveBeenSeen() {
+    try {
+      return localStorage.getItem(UPDATES_SEEN_KEY) === CURRENT_UPDATE_VERSION;
+    } catch {
+      return false;
+    }
+  }
+
+  function renderUpdatesBadge() {
+    const hasNewUpdates = !updatesHaveBeenSeen();
+    dom.updatesNewBadge.hidden = !hasNewUpdates;
+    dom.updatesButton.setAttribute(
+      "aria-label",
+      hasNewUpdates ? "更新情報を開く（新着あり）" : "更新情報を開く",
+    );
+  }
+
+  function markUpdatesSeen() {
+    try {
+      localStorage.setItem(UPDATES_SEEN_KEY, CURRENT_UPDATE_VERSION);
+    } catch {
+      // Update history still works when storage is unavailable; the NEW badge may reappear.
+    }
+    renderUpdatesBadge();
+  }
+
+  function isInfoDialogOpen(dialog) {
+    return Boolean(dialog && (dialog.open || dialog.hasAttribute("open")));
+  }
+
+  function finishInfoDialogClose(dialog) {
+    if (dialog === dom.updatesDialog) markUpdatesSeen();
+    const opener = dialogOpeners.get(dialog);
+    dialogOpeners.delete(dialog);
+    window.requestAnimationFrame(() => opener?.focus({ preventScroll: true }));
+  }
+
+  function openInfoDialog(dialog, opener) {
+    if (!dialog || isInfoDialogOpen(dialog)) return;
+    dialogOpeners.set(dialog, opener);
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else {
+      dialog.setAttribute("open", "");
+      dialog.setAttribute("aria-modal", "true");
+      dialog.classList.add("is-fallback-open");
+      document.body.classList.add("has-info-dialog");
+      window.requestAnimationFrame(() => dialog.querySelector("[data-dialog-close]")?.focus());
+    }
+  }
+
+  function closeInfoDialog(dialog) {
+    if (!isInfoDialogOpen(dialog)) return;
+    if (typeof dialog.close === "function" && dialog.open) dialog.close();
+    else {
+      dialog.removeAttribute("open");
+      dialog.removeAttribute("aria-modal");
+      dialog.classList.remove("is-fallback-open");
+      document.body.classList.remove("has-info-dialog");
+      finishInfoDialogClose(dialog);
+    }
+  }
+
+  function configureInfoDialogs() {
+    const dialogs = [dom.helpDialog, dom.updatesDialog];
+    dom.helpButton.addEventListener("click", () => openInfoDialog(dom.helpDialog, dom.helpButton));
+    dom.updatesButton.addEventListener("click", () =>
+      openInfoDialog(dom.updatesDialog, dom.updatesButton),
+    );
+
+    for (const dialog of dialogs) {
+      for (const closeButton of dialog.querySelectorAll("[data-dialog-close]")) {
+        closeButton.addEventListener("click", () => closeInfoDialog(dialog));
+      }
+      dialog.addEventListener("click", (event) => {
+        if (event.target !== dialog) return;
+        const rect = dialog.getBoundingClientRect();
+        const isOutside =
+          event.clientX < rect.left ||
+          event.clientX > rect.right ||
+          event.clientY < rect.top ||
+          event.clientY > rect.bottom;
+        if (isOutside) closeInfoDialog(dialog);
+      });
+      dialog.addEventListener("keydown", (event) => {
+        if (!dialog.classList.contains("is-fallback-open")) return;
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          closeInfoDialog(dialog);
+          return;
+        }
+        if (event.key !== "Tab") return;
+        const focusable = Array.from(
+          dialog.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'),
+        ).filter((element) => element.getClientRects().length > 0);
+        if (!focusable.length) {
+          event.preventDefault();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      });
+      dialog.addEventListener("close", () => {
+        dialog.removeAttribute("aria-modal");
+        dialog.classList.remove("is-fallback-open");
+        document.body.classList.remove("has-info-dialog");
+        finishInfoDialogClose(dialog);
+      });
+    }
+
+    renderUpdatesBadge();
+  }
+
   function pointOnMap(event) {
     const rect = dom.mapStage.getBoundingClientRect();
     return {
@@ -1797,6 +1925,8 @@
   }
 
   function handleKeyboard(event) {
+    if (isInfoDialogOpen(dom.helpDialog) || isInfoDialogOpen(dom.updatesDialog)) return;
+
     if (event.key === "Escape" && librarySelectionMode) {
       event.preventDefault();
       setLibrarySelectionMode(false);
@@ -2831,6 +2961,7 @@
 
   function configureEvents() {
     configureInputs();
+    configureInfoDialogs();
 
     dom.undoButton.addEventListener("click", undo);
     dom.redoButton.addEventListener("click", redo);

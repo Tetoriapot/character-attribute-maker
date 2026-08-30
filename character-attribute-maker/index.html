@@ -34,30 +34,58 @@
         </div>
       </div>
 
-      <div class="header-actions" aria-label="編集操作">
-        <button
-          id="undoButton"
-          class="button button-secondary button-compact"
-          type="button"
-          aria-label="元に戻す（Ctrl＋Z）"
-          title="元に戻す（Ctrl＋Z）"
-          disabled
-        >
-          <span aria-hidden="true">↶</span> 元に戻す
-        </button>
-        <button
-          id="redoButton"
-          class="button button-secondary button-compact"
-          type="button"
-          aria-label="やり直す（Ctrl＋Shift＋Z または Ctrl＋Y）"
-          title="やり直す（Ctrl＋Shift＋Z / Ctrl＋Y）"
-          disabled
-        >
-          <span aria-hidden="true">↷</span> やり直す
-        </button>
-        <button id="resetButton" class="button button-quiet button-compact" type="button">
-          すべて初期化
-        </button>
+      <div class="header-controls">
+        <div class="header-info-actions" aria-label="サイト案内">
+          <button
+            id="helpButton"
+            class="button header-help-button"
+            type="button"
+            aria-label="使い方・ヘルプを開く"
+            aria-haspopup="dialog"
+            aria-controls="helpDialog"
+            title="使い方・ヘルプ"
+          >
+            <span aria-hidden="true">?</span>
+          </button>
+          <button
+            id="updatesButton"
+            class="button header-updates-button"
+            type="button"
+            aria-label="更新情報を開く（新着あり）"
+            aria-haspopup="dialog"
+            aria-controls="updatesDialog"
+          >
+            <span class="updates-icon" aria-hidden="true">↻</span>
+            <span>更新情報</span>
+            <span id="updatesNewBadge" class="updates-new-badge" aria-hidden="true">NEW</span>
+          </button>
+        </div>
+
+        <div class="header-actions" aria-label="編集操作">
+          <button
+            id="undoButton"
+            class="button button-secondary button-compact"
+            type="button"
+            aria-label="元に戻す（Ctrl＋Z）"
+            title="元に戻す（Ctrl＋Z）"
+            disabled
+          >
+            <span aria-hidden="true">↶</span><span class="button-label">元に戻す</span>
+          </button>
+          <button
+            id="redoButton"
+            class="button button-secondary button-compact"
+            type="button"
+            aria-label="やり直す（Ctrl＋Shift＋Z または Ctrl＋Y）"
+            title="やり直す（Ctrl＋Shift＋Z / Ctrl＋Y）"
+            disabled
+          >
+            <span aria-hidden="true">↷</span><span class="button-label">やり直す</span>
+          </button>
+          <button id="resetButton" class="button button-quiet button-compact" type="button">
+            すべて初期化
+          </button>
+        </div>
       </div>
     </header>
 
@@ -880,6 +908,165 @@
       </p>
       <p>アップロードした画像や配置内容は外部へ送信されません。</p>
     </footer>
+
+    <dialog
+      id="helpDialog"
+      class="info-dialog"
+      role="dialog"
+      aria-labelledby="helpDialogTitle"
+      aria-describedby="helpDialogIntro"
+    >
+      <div class="info-dialog-shell">
+        <header class="info-dialog-header">
+          <div>
+            <p class="info-dialog-kicker">HELP</p>
+            <h2 id="helpDialogTitle">キャラ属性メーカーの使い方</h2>
+          </div>
+          <button
+            class="info-dialog-close"
+            type="button"
+            data-dialog-close
+            aria-label="ヘルプを閉じる"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+
+        <div class="info-dialog-content">
+          <p id="helpDialogIntro" class="info-dialog-lead">
+            タイトルと4方向の評価語を決め、画像を配置してPNGで保存するまで、ブラウザだけで操作できます。
+          </p>
+
+          <ol class="help-steps">
+            <li>
+              <span class="help-step-number" aria-hidden="true">1</span>
+              <div>
+                <strong>タイトルと軸を決める</strong>
+                <p>左の「タイトルと軸ラベル」で、図の名前と上下左右の評価語を入力します。</p>
+              </div>
+            </li>
+            <li>
+              <span class="help-step-number" aria-hidden="true">2</span>
+              <div>
+                <strong>キャラクター画像を追加する</strong>
+                <p>PNG・JPEG・WebPを選択するか、画像追加エリアへまとめてドロップします。</p>
+              </div>
+            </li>
+            <li>
+              <span class="help-step-number" aria-hidden="true">3</span>
+              <div>
+                <strong>マップへ配置して整える</strong>
+                <p>サムネイルをクリックして追加し、ドラッグで移動します。選択後は名前・サイズ・枠・形状を変更できます。</p>
+              </div>
+            </li>
+            <li>
+              <span class="help-step-number" aria-hidden="true">4</span>
+              <div>
+                <strong>PNGで保存する</strong>
+                <p>背景と解像度を確認して「PNG画像を保存」を押します。編集用の枠やボタンは画像に入りません。</p>
+              </div>
+            </li>
+          </ol>
+
+          <section class="info-dialog-section" aria-labelledby="helpOperationsHeading">
+            <h3 id="helpOperationsHeading">画像の操作</h3>
+            <div class="help-tip-grid">
+              <div><strong>移動</strong><span>画像をドラッグ</span></div>
+              <div><strong>サイズ</strong><span>選択枠の右下をドラッグ</span></div>
+              <div><strong>前面へ</strong><span>画像を選択すると最前面へ移動</span></div>
+              <div><strong>表示倍率</strong><span>25～200％、またはウィンドウに合わせる</span></div>
+            </div>
+          </section>
+
+          <section class="info-dialog-section" aria-labelledby="helpKeyboardHeading">
+            <h3 id="helpKeyboardHeading">キーボード操作</h3>
+            <dl class="shortcut-grid">
+              <div><dt><kbd>Delete</kbd></dt><dd>選択画像を削除</dd></div>
+              <div><dt><kbd>矢印</kbd></dt><dd>選択画像を少し移動</dd></div>
+              <div><dt><kbd>Shift</kbd> ＋ <kbd>矢印</kbd></dt><dd>選択画像を大きく移動</dd></div>
+              <div><dt><kbd>Ctrl</kbd> ＋ <kbd>Z</kbd></dt><dd>元に戻す</dd></div>
+            </dl>
+          </section>
+
+          <aside class="info-dialog-note">
+            <strong>安心して使えます</strong>
+            <p>追加した画像は外部へ送信されません。表示倍率は編集画面だけに反映され、PNGの解像度には影響しません。</p>
+          </aside>
+
+          <p class="info-dialog-contact">
+            ご質問・不具合は
+            <a href="https://tetoriapot.sakura.ne.jp/index.html" target="_blank" rel="noopener noreferrer">TeToriapot<span class="visually-hidden">（外部サイトを新しいタブで開きます）</span></a>
+            へお寄せください。
+          </p>
+        </div>
+
+        <footer class="info-dialog-footer">
+          <button class="button button-primary" type="button" data-dialog-close>閉じる</button>
+        </footer>
+      </div>
+    </dialog>
+
+    <dialog
+      id="updatesDialog"
+      class="info-dialog"
+      role="dialog"
+      aria-labelledby="updatesDialogTitle"
+      aria-describedby="updatesDialogIntro"
+    >
+      <div class="info-dialog-shell">
+        <header class="info-dialog-header">
+          <div>
+            <p class="info-dialog-kicker">WHAT'S NEW</p>
+            <h2 id="updatesDialogTitle">更新情報</h2>
+          </div>
+          <button
+            class="info-dialog-close"
+            type="button"
+            data-dialog-close
+            aria-label="更新情報を閉じる"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+
+        <div class="info-dialog-content">
+          <p id="updatesDialogIntro" class="info-dialog-lead">
+            キャラ属性メーカーを、より見やすく使いやすくするための変更履歴です。
+          </p>
+
+          <article class="release-card is-latest">
+            <header class="release-card-header">
+              <time datetime="2026-08-30">2026.08.30</time>
+              <span class="release-latest-badge">最新</span>
+            </header>
+            <h3>編集画面をコンパクトにしました</h3>
+            <ul>
+              <li>属性マップ周辺と編集パネル内の余白を狭め、編集領域を広く使えるようにしました。</li>
+              <li>使い方を確認できるHelpと、更新情報画面を追加しました。</li>
+              <li>属性マップを25～200％で拡大・縮小し、ウィンドウへ合わせられるようにしました。</li>
+              <li>矢印の先端サイズ・線の太さ・透明度を変更できるようにしました。</li>
+            </ul>
+          </article>
+
+          <article class="release-card">
+            <header class="release-card-header">
+              <time datetime="2026-08-28">2026.08.28</time>
+            </header>
+            <h3>まとめて編集できる機能を追加しました</h3>
+            <ul>
+              <li>追加画像の選択削除と一括削除に対応しました。</li>
+              <li>画像サイズ・枠・形状・名前表示を、配置中の全画像へ一括適用できるようにしました。</li>
+              <li>図の内側と外側で、背景色・グラデーション・背景画像を別々に設定できるようにしました。</li>
+              <li>タイトルと評価語をマップの外側へ配置できるようにしました。</li>
+            </ul>
+          </article>
+        </div>
+
+        <footer class="info-dialog-footer">
+          <button class="button button-primary" type="button" data-dialog-close>閉じる</button>
+        </footer>
+      </div>
+    </dialog>
 
     <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
