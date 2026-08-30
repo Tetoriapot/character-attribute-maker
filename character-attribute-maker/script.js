@@ -9,7 +9,7 @@
   const HISTORY_LIMIT = 60;
   const PREFERENCES_KEY = "character-attribute-maker-preferences-v1";
   const UPDATES_SEEN_KEY = "character-attribute-maker-updates-seen-v1";
-  const CURRENT_UPDATE_VERSION = "2026-08-30-help-and-spacing";
+  const CURRENT_UPDATE_VERSION = "2026-08-30-help-theme-color";
   const SUPPORTED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
   const SUPPORTED_EXTENSIONS = /\.(png|jpe?g|webp)$/i;
   const BACKGROUND_MODES = new Set(["solid", "gradient", "image", "transparent"]);
