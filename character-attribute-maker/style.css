@@ -1120,6 +1120,10 @@ kbd {
   --map-axis-horizontal: #71827c;
   --map-axis-vertical: #71827c;
   --map-axis-inset: 8%;
+  --map-axis-arrow-base-size: 14px;
+  --map-axis-arrow-size: 12px;
+  --map-axis-line-width: 2.5px;
+  --map-axis-opacity: 1;
   --map-boundary-color: #71827c;
   --map-text-color: #26332f;
   --map-font-family: "Yu Gothic UI", "Yu Gothic", Meiryo, sans-serif;
@@ -1200,65 +1204,92 @@ kbd {
 .axis-line {
   position: absolute;
   z-index: 1;
+  opacity: var(--map-axis-opacity);
   pointer-events: none;
 }
 
 .axis-line::before,
 .axis-line::after {
   position: absolute;
+  z-index: 1;
   content: "";
 }
 
+.axis-shaft {
+  position: absolute;
+  z-index: 0;
+}
+
 .axis-horizontal {
-  top: calc(50% - 1px);
+  top: 50%;
   right: var(--map-axis-inset);
   left: var(--map-axis-inset);
-  height: 2px;
+  height: calc(var(--map-axis-line-width) * var(--map-scale, 1));
+  transform: translateY(-50%);
+}
+
+.axis-horizontal .axis-shaft {
+  top: 0;
+  right: calc(var(--map-axis-arrow-size) * var(--map-scale, 1));
+  bottom: 0;
+  left: calc(var(--map-axis-arrow-size) * var(--map-scale, 1));
   background: var(--map-axis-horizontal);
 }
 
 .axis-horizontal::before {
-  top: -5px;
-  left: -1px;
-  width: 10px;
-  height: 12px;
+  top: 50%;
+  left: 0;
+  width: calc(var(--map-axis-arrow-size) * var(--map-scale, 1));
+  height: calc(var(--map-axis-arrow-base-size) * var(--map-scale, 1));
   background: var(--map-axis-start-color);
   clip-path: polygon(100% 0, 0 50%, 100% 100%);
+  transform: translateY(-50%);
 }
 
 .axis-horizontal::after {
-  top: -5px;
-  right: -1px;
-  width: 10px;
-  height: 12px;
+  top: 50%;
+  right: 0;
+  width: calc(var(--map-axis-arrow-size) * var(--map-scale, 1));
+  height: calc(var(--map-axis-arrow-base-size) * var(--map-scale, 1));
   background: var(--map-axis-end-color);
   clip-path: polygon(0 0, 100% 50%, 0 100%);
+  transform: translateY(-50%);
 }
 
 .axis-vertical {
   top: var(--map-axis-inset);
   bottom: var(--map-axis-inset);
-  left: calc(50% - 1px);
-  width: 2px;
+  left: 50%;
+  width: calc(var(--map-axis-line-width) * var(--map-scale, 1));
+  transform: translateX(-50%);
+}
+
+.axis-vertical .axis-shaft {
+  top: calc(var(--map-axis-arrow-size) * var(--map-scale, 1));
+  right: 0;
+  bottom: calc(var(--map-axis-arrow-size) * var(--map-scale, 1));
+  left: 0;
   background: var(--map-axis-vertical);
 }
 
 .axis-vertical::before {
-  top: -1px;
-  left: -5px;
-  width: 12px;
-  height: 10px;
+  top: 0;
+  left: 50%;
+  width: calc(var(--map-axis-arrow-base-size) * var(--map-scale, 1));
+  height: calc(var(--map-axis-arrow-size) * var(--map-scale, 1));
   background: var(--map-axis-start-color);
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  transform: translateX(-50%);
 }
 
 .axis-vertical::after {
-  bottom: -1px;
-  left: -5px;
-  width: 12px;
-  height: 10px;
+  bottom: 0;
+  left: 50%;
+  width: calc(var(--map-axis-arrow-base-size) * var(--map-scale, 1));
+  height: calc(var(--map-axis-arrow-size) * var(--map-scale, 1));
   background: var(--map-axis-end-color);
   clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform: translateX(-50%);
 }
 
 .map-title {

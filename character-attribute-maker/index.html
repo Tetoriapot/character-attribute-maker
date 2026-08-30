@@ -627,6 +627,60 @@
               />
               <small id="axisLengthHelp" class="field-help">水平・垂直の軸を同じ長さで調整します</small>
             </label>
+
+            <label class="field field-full">
+              <span class="range-label-row">
+                <span>矢印先端の大きさ</span>
+                <output id="axisArrowSizeOutput" for="axisArrowSizeInput">12 px</output>
+              </span>
+              <input
+                id="axisArrowSizeInput"
+                type="range"
+                min="6"
+                max="32"
+                step="1"
+                value="12"
+                aria-label="矢印先端の大きさ"
+                aria-describedby="axisArrowSizeHelp"
+              />
+              <small id="axisArrowSizeHelp" class="field-help">4方向の矢印先端を同じ大きさで調整します</small>
+            </label>
+
+            <label class="field field-full">
+              <span class="range-label-row">
+                <span>軸線の太さ</span>
+                <output id="axisLineWidthOutput" for="axisLineWidthInput">2.5 px</output>
+              </span>
+              <input
+                id="axisLineWidthInput"
+                type="range"
+                min="1"
+                max="12"
+                step="0.5"
+                value="2.5"
+                aria-label="軸線の太さ"
+                aria-describedby="axisLineWidthHelp"
+              />
+              <small id="axisLineWidthHelp" class="field-help">水平・垂直の軸線を同じ太さで調整します</small>
+            </label>
+
+            <label class="field field-full">
+              <span class="range-label-row">
+                <span>軸線・矢印の不透明度</span>
+                <output id="axisOpacityOutput" for="axisOpacityInput">100%</output>
+              </span>
+              <input
+                id="axisOpacityInput"
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value="100"
+                aria-label="軸線・矢印の不透明度"
+                aria-describedby="axisOpacityHelp"
+              />
+              <small id="axisOpacityHelp" class="field-help">0%で軸線と矢印だけを透明にします</small>
+            </label>
           </div>
 
           <div class="appearance-group appearance-group-last">
@@ -719,8 +773,12 @@
               aria-label="キャラクター画像を配置する二軸マップ"
             >
               <div id="mapInnerBackground" class="map-inner-background" aria-hidden="true"></div>
-              <div class="axis-line axis-horizontal" aria-hidden="true"></div>
-              <div class="axis-line axis-vertical" aria-hidden="true"></div>
+              <div class="axis-line axis-horizontal" aria-hidden="true">
+                <span class="axis-shaft"></span>
+              </div>
+              <div class="axis-line axis-vertical" aria-hidden="true">
+                <span class="axis-shaft"></span>
+              </div>
 
               <div id="mapEmptyHint" class="map-empty-hint" aria-hidden="true">
                 <span class="map-empty-icon">＋</span>

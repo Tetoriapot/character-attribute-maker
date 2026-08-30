@@ -14,6 +14,12 @@
   const LABEL_LAYOUTS = new Set(["inside", "outside"]);
   const AXIS_LENGTH_MIN = 50;
   const AXIS_LENGTH_MAX = 90;
+  const AXIS_ARROW_SIZE_MIN = 6;
+  const AXIS_ARROW_SIZE_MAX = 32;
+  const AXIS_LINE_WIDTH_MIN = 1;
+  const AXIS_LINE_WIDTH_MAX = 12;
+  const AXIS_OPACITY_MIN = 0;
+  const AXIS_OPACITY_MAX = 100;
   const BACKGROUND_OPACITY_MIN = 0;
   const BACKGROUND_OPACITY_MAX = 100;
   const OUTSIDE_VERTICAL_LABEL_MAX_CHARACTERS = 11;
@@ -177,6 +183,12 @@
     axisGradientEndValue: document.querySelector("#axisGradientEndValue"),
     axisLengthInput: document.querySelector("#axisLengthInput"),
     axisLengthOutput: document.querySelector("#axisLengthOutput"),
+    axisArrowSizeInput: document.querySelector("#axisArrowSizeInput"),
+    axisArrowSizeOutput: document.querySelector("#axisArrowSizeOutput"),
+    axisLineWidthInput: document.querySelector("#axisLineWidthInput"),
+    axisLineWidthOutput: document.querySelector("#axisLineWidthOutput"),
+    axisOpacityInput: document.querySelector("#axisOpacityInput"),
+    axisOpacityOutput: document.querySelector("#axisOpacityOutput"),
     fontFamilyInput: document.querySelector("#fontFamilyInput"),
     textColorInput: document.querySelector("#textColorInput"),
     textColorValue: document.querySelector("#textColorValue"),
@@ -237,6 +249,9 @@
         axisGradientStart: "#71827c",
         axisGradientEnd: "#4e9f92",
         axisLength: 84,
+        axisArrowSize: 12,
+        axisLineWidth: 2.5,
+        axisOpacity: 100,
         textColor: "#26332f",
         fontFamily: "yu-gothic-ui",
         labelLayout: "inside",
@@ -310,6 +325,26 @@
           AXIS_LENGTH_MAX,
         );
       }
+      const axisArrowSize = normalizeRangeValue(
+        appearance.axisArrowSize,
+        AXIS_ARROW_SIZE_MIN,
+        AXIS_ARROW_SIZE_MAX,
+      );
+      if (axisArrowSize !== null) state.appearance.axisArrowSize = axisArrowSize;
+      const axisLineWidth = normalizeRangeValue(
+        appearance.axisLineWidth,
+        AXIS_LINE_WIDTH_MIN,
+        AXIS_LINE_WIDTH_MAX,
+        0.5,
+      );
+      if (axisLineWidth !== null) state.appearance.axisLineWidth = axisLineWidth;
+      const axisOpacity = normalizeRangeValue(
+        appearance.axisOpacity,
+        AXIS_OPACITY_MIN,
+        AXIS_OPACITY_MAX,
+        5,
+      );
+      if (axisOpacity !== null) state.appearance.axisOpacity = axisOpacity;
       const backgroundOpacity = Number(appearance.backgroundOpacity);
       if (Number.isFinite(backgroundOpacity)) {
         state.appearance.backgroundOpacity = clamp(
@@ -438,6 +473,26 @@
           BACKGROUND_OPACITY_MAX,
         )
       : defaults.appearance.backgroundOpacity;
+    state.appearance.axisArrowSize =
+      normalizeRangeValue(
+        state.appearance.axisArrowSize,
+        AXIS_ARROW_SIZE_MIN,
+        AXIS_ARROW_SIZE_MAX,
+      ) ?? defaults.appearance.axisArrowSize;
+    state.appearance.axisLineWidth =
+      normalizeRangeValue(
+        state.appearance.axisLineWidth,
+        AXIS_LINE_WIDTH_MIN,
+        AXIS_LINE_WIDTH_MAX,
+        0.5,
+      ) ?? defaults.appearance.axisLineWidth;
+    state.appearance.axisOpacity =
+      normalizeRangeValue(
+        state.appearance.axisOpacity,
+        AXIS_OPACITY_MIN,
+        AXIS_OPACITY_MAX,
+        5,
+      ) ?? defaults.appearance.axisOpacity;
     if (!LABEL_LAYOUTS.has(state.appearance.labelLayout)) {
       state.appearance.labelLayout = "inside";
     }
@@ -516,6 +571,13 @@
 
   function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
+  }
+
+  function normalizeRangeValue(value, min, max, step = 1) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return null;
+    const snapped = Math.round(number / step) * step;
+    return clamp(Number(snapped.toFixed(4)), min, max);
   }
 
   function captionIsVisible(placement) {
@@ -977,6 +1039,22 @@
       `linear-gradient(180deg, ${axisColors.start}, ${axisColors.end})`,
     );
     dom.mapComposition.style.setProperty("--map-axis-inset", `${axisInset}%`);
+    dom.mapComposition.style.setProperty(
+      "--map-axis-arrow-size",
+      `${state.appearance.axisArrowSize}px`,
+    );
+    dom.mapComposition.style.setProperty(
+      "--map-axis-arrow-base-size",
+      `${Number(((state.appearance.axisArrowSize * 7) / 6).toFixed(4))}px`,
+    );
+    dom.mapComposition.style.setProperty(
+      "--map-axis-line-width",
+      `${state.appearance.axisLineWidth}px`,
+    );
+    dom.mapComposition.style.setProperty(
+      "--map-axis-opacity",
+      String(state.appearance.axisOpacity / 100),
+    );
     dom.mapComposition.style.setProperty("--map-text-color", state.appearance.textColor);
     dom.mapComposition.style.setProperty("--map-font-family", getFontStack());
 
@@ -1036,6 +1114,24 @@
     dom.axisGradientEndInput.value = state.appearance.axisGradientEnd;
     dom.axisLengthInput.value = String(state.appearance.axisLength);
     dom.axisLengthOutput.textContent = `${state.appearance.axisLength}%`;
+    dom.axisArrowSizeInput.value = String(state.appearance.axisArrowSize);
+    dom.axisArrowSizeOutput.textContent = `${state.appearance.axisArrowSize} px`;
+    dom.axisArrowSizeInput.setAttribute(
+      "aria-valuetext",
+      `${state.appearance.axisArrowSize}ピクセル`,
+    );
+    dom.axisLineWidthInput.value = String(state.appearance.axisLineWidth);
+    dom.axisLineWidthOutput.textContent = `${state.appearance.axisLineWidth} px`;
+    dom.axisLineWidthInput.setAttribute(
+      "aria-valuetext",
+      `${state.appearance.axisLineWidth}ピクセル`,
+    );
+    dom.axisOpacityInput.value = String(state.appearance.axisOpacity);
+    dom.axisOpacityOutput.textContent = `${state.appearance.axisOpacity}%`;
+    dom.axisOpacityInput.setAttribute(
+      "aria-valuetext",
+      `${state.appearance.axisOpacity}パーセント`,
+    );
     dom.fontFamilyInput.value = state.appearance.fontFamily;
     dom.textColorInput.value = state.appearance.textColor;
     dom.backgroundColorValue.textContent = state.appearance.backgroundColor.toUpperCase();
@@ -1672,9 +1768,9 @@
     renderAppearance();
   }
 
-  function drawArrowHead(context, x, y, direction, color) {
-    const length = 12;
-    const half = 7;
+  function drawArrowHead(context, x, y, direction, color, size) {
+    const length = size;
+    const half = (size * 7) / 12;
     context.save();
     context.translate(x, y);
     context.rotate(direction);
@@ -1974,6 +2070,9 @@
     const axisInset = (MAP_SIZE * (100 - state.appearance.axisLength)) / 200;
     const axisStart = axisInset;
     const axisEnd = MAP_SIZE - axisInset;
+    const axisArrowSize = state.appearance.axisArrowSize;
+    const axisShaftStart = axisStart + axisArrowSize;
+    const axisShaftEnd = axisEnd - axisArrowSize;
 
     context.save();
     context.translate(plotRect.x, plotRect.y);
@@ -1986,39 +2085,70 @@
       );
     }
     const horizontalGradient = context.createLinearGradient(
-      axisStart,
+      axisShaftStart,
       MAP_SIZE / 2,
-      axisEnd,
+      axisShaftEnd,
       MAP_SIZE / 2,
     );
     horizontalGradient.addColorStop(0, axisColors.start);
     horizontalGradient.addColorStop(1, axisColors.end);
     const verticalGradient = context.createLinearGradient(
       MAP_SIZE / 2,
-      axisStart,
+      axisShaftStart,
       MAP_SIZE / 2,
-      axisEnd,
+      axisShaftEnd,
     );
     verticalGradient.addColorStop(0, axisColors.start);
     verticalGradient.addColorStop(1, axisColors.end);
-    context.lineWidth = 2.5;
-    context.lineCap = "round";
+    context.save();
+    context.globalAlpha = state.appearance.axisOpacity / 100;
+    context.lineWidth = state.appearance.axisLineWidth;
+    context.lineCap = "butt";
 
     context.strokeStyle = horizontalGradient;
     context.beginPath();
-    context.moveTo(axisStart, MAP_SIZE / 2);
-    context.lineTo(axisEnd, MAP_SIZE / 2);
+    context.moveTo(axisShaftStart, MAP_SIZE / 2);
+    context.lineTo(axisShaftEnd, MAP_SIZE / 2);
     context.stroke();
 
     context.strokeStyle = verticalGradient;
     context.beginPath();
-    context.moveTo(MAP_SIZE / 2, axisStart);
-    context.lineTo(MAP_SIZE / 2, axisEnd);
+    context.moveTo(MAP_SIZE / 2, axisShaftStart);
+    context.lineTo(MAP_SIZE / 2, axisShaftEnd);
     context.stroke();
-    drawArrowHead(context, axisStart, MAP_SIZE / 2, Math.PI, axisColors.start);
-    drawArrowHead(context, axisEnd, MAP_SIZE / 2, 0, axisColors.end);
-    drawArrowHead(context, MAP_SIZE / 2, axisStart, -Math.PI / 2, axisColors.start);
-    drawArrowHead(context, MAP_SIZE / 2, axisEnd, Math.PI / 2, axisColors.end);
+    drawArrowHead(
+      context,
+      axisStart,
+      MAP_SIZE / 2,
+      Math.PI,
+      axisColors.start,
+      axisArrowSize,
+    );
+    drawArrowHead(
+      context,
+      axisEnd,
+      MAP_SIZE / 2,
+      0,
+      axisColors.end,
+      axisArrowSize,
+    );
+    drawArrowHead(
+      context,
+      MAP_SIZE / 2,
+      axisStart,
+      -Math.PI / 2,
+      axisColors.start,
+      axisArrowSize,
+    );
+    drawArrowHead(
+      context,
+      MAP_SIZE / 2,
+      axisEnd,
+      Math.PI / 2,
+      axisColors.end,
+      axisArrowSize,
+    );
+    context.restore();
 
     if (!isOutsideLayout) {
       drawAxisLabel(context, state.mapTitle, 18, 36, 220, "left", 22);
@@ -2376,6 +2506,56 @@
           AXIS_LENGTH_MIN,
           AXIS_LENGTH_MAX,
         );
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+    );
+
+    bindStatefulControl(
+      dom.axisArrowSizeInput,
+      () => {
+        state.appearance.axisArrowSize =
+          normalizeRangeValue(
+            dom.axisArrowSizeInput.value,
+            AXIS_ARROW_SIZE_MIN,
+            AXIS_ARROW_SIZE_MAX,
+          ) ?? 12;
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+    );
+
+    bindStatefulControl(
+      dom.axisLineWidthInput,
+      () => {
+        state.appearance.axisLineWidth =
+          normalizeRangeValue(
+            dom.axisLineWidthInput.value,
+            AXIS_LINE_WIDTH_MIN,
+            AXIS_LINE_WIDTH_MAX,
+            0.5,
+          ) ?? 2.5;
+      },
+      () => {
+        renderAppearance();
+        savePreferencesSoon();
+      },
+    );
+
+    bindStatefulControl(
+      dom.axisOpacityInput,
+      () => {
+        state.appearance.axisOpacity =
+          normalizeRangeValue(
+            dom.axisOpacityInput.value,
+            AXIS_OPACITY_MIN,
+            AXIS_OPACITY_MAX,
+            5,
+          ) ?? 100;
       },
       () => {
         renderAppearance();
