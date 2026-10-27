@@ -1,0 +1,15 @@
+export const h = {
+  undo: '元に戻す', redo: 'やり直す', undone: '編集を元に戻しました。', redone: '編集をやり直しました。',
+  historyHint: '最大100操作。画像登録と一括移動は1操作です。プロジェクト切り替え・再読み込みで履歴をリセットします。',
+  tools: '編集補助', panel: '検索・選択・表示設定', search: 'アイテムを検索', searchHint: '名前・説明・タグを検索。空白で区切ると、すべての語を含むものを表示します。',
+  tags: 'タグで絞り込む', tagHint: '選んだすべてのタグを含むものを表示します。', noTags: 'タグはまだありません。', resetFilter: '検索・タグを解除',
+  multi: '複数選択', selectVisible: '表示中を選択', clearSelection: '選択を解除', destination: '一括移動先', move: '選択項目を移動',
+  selectionHint: 'チェックで選択します。Shift＋クリックで範囲選択、Ctrl／⌘＋クリックで追加・解除できます。ロック中の項目は選択できません。',
+  hiddenSelection: '非表示の選択項目も一括移動の対象です。', noResults: '条件に一致するアイテムがありません。',
+  zoom: '表示倍率', grid: 'グリッドを表示', viewHint: '検索・選択・表示倍率・グリッドは出力画像やJSONには反映しません。',
+  tray: '未分類のスクロール領域', virtualHint: '項目間は矢印キー、先頭・末尾はHome／End、ページ単位はPageUp／PageDownで移動できます。',
+  selected: (count: number, hidden: number) => `${count}件選択中${hidden ? `（非表示${hidden}件）` : ''}`,
+  results: (count: number, total: number) => `${count} / ${total}件を表示`, selectItem: (name: string) => `「${name}」を選択`,
+  moved: (count: number) => `${count}件を移動しました。`, range: (from: number, to: number, total: number) => `${from}〜${to} / ${total}件`,
+  shortcuts: 'Ctrl／⌘＋Zで元に戻す、Ctrl／⌘＋Shift＋ZまたはCtrl＋Yでやり直します。入力欄では文字入力の履歴を操作します。',
+} as const;

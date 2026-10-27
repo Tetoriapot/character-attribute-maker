@@ -49,7 +49,7 @@ export async function listProjects(database = db): Promise<ProjectSummary[]> {
 }
 
 // Image decoding and Base64 conversion happen before the transaction, so it cannot auto-commit midway.
-export async function saveSnapshot(project: Project, expectedRevision: number, pending: StoredBlob[], database = db): Promise<number> {
+export async function saveSnapshot(project: Project, expectedRevision: number, pending: StoredBlob[], database = db, recover: Map<string, StoredBlob> = new Map()): Promise<number> {
   return database.transaction('rw', database.projects, database.blobs, async () => {
     const existing = await database.projects.get(project.id);
     if ((existing?.revision ?? 0) !== expectedRevision) throw new ConflictError();
@@ -58,7 +58,11 @@ export async function saveSnapshot(project: Project, expectedRevision: number, p
       await database.blobs.add(record);
     }
     for (const key of new Set(Object.values(project.assets).map((asset) => asset.blobKey))) {
-      if (!await database.blobs.get(key)) throw new Error(s.missingBlob);
+      if (!await database.blobs.get(key)) {
+        const record = recover.get(key);
+        if (!record) throw new Error(s.missingBlob);
+        await database.blobs.add(record);
+      }
     }
     const revision = expectedRevision + 1;
     await database.projects.put({ id: project.id, project, revision, updatedAt: project.updatedAt });

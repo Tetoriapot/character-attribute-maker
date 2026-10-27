@@ -10,6 +10,7 @@ import { d } from '../../app/designMessages';
 import { migrateProject } from '../../data/migrations';
 import { textOnly } from '../export/sharing';
 import { e } from '../../app/exportMessages';
+import { emptyHistory, recordEdit, retainedBlobKeys } from '../editor/history';
 
 let revision = 0;
 let pending = new Map<string, StoredBlob>();
@@ -28,7 +29,7 @@ function install(project: Project, nextRevision: number, blobs: StoredBlob[]) {
   }
   const previous = get().thumbnails;
   revision = nextRevision; pending = new Map();
-  set({ project, records, thumbnails, dirty: false, ready: true, loadError: null, saveError: null, saveStatus: 'saved', selection: { kind: 'project' }, error: null, imageErrors: [], progress: '' });
+  set({ project, records, thumbnails, history: emptyHistory(), selectedIds: [], selectionMode: false, selectionAnchor: null, query: '', filterTags: [], draggingId: null, editEpoch: get().editEpoch + 1, drafts: {}, dirty: false, ready: true, loadError: null, saveError: null, saveStatus: 'saved', selection: { kind: 'project' }, error: null, imageErrors: [], progress: '' });
   Object.values(previous).forEach((url) => URL.revokeObjectURL(url));
 }
 
@@ -38,16 +39,20 @@ export function initializeStorage(): Promise<void> {
   if (!subscribed) {
     subscribed = true;
     useEditor.subscribe((state, previous) => {
-      if (state.project.id === previous.project.id && state.project.assets !== previous.project.assets) {
+      if (state.project.id === previous.project.id && (state.project.assets !== previous.project.assets || state.history !== previous.history)) {
         const removed = Object.keys(previous.project.assets).filter((id) => !state.project.assets[id]);
-        if (removed.length) {
+        {
           const records = new Map(state.records), thumbnails = { ...state.thumbnails };
-          const keys = new Set(Object.values(state.project.assets).map((asset) => asset.blobKey));
+          const keys = retainedBlobKeys(state.project, state.history);
           for (const id of removed) {
             if (thumbnails[id]) URL.revokeObjectURL(thumbnails[id]);
             delete thumbnails[id];
           }
           for (const key of records.keys()) { if (!keys.has(key)) { records.delete(key); pending.delete(key); } }
+          for (const asset of Object.values(state.project.assets)) {
+            const record = records.get(asset.blobKey);
+            if (!thumbnails[asset.id] && record) thumbnails[asset.id] = URL.createObjectURL(record.thumbnail);
+          }
           set({ records, thumbnails });
         }
       }
@@ -78,9 +83,10 @@ export function flushSave(): Promise<void> {
       for (;;) {
         while (get().dirty) {
           const snapshot = get().project;
-          const batch = [...pending.values()];
+          const keys = new Set(Object.values(snapshot.assets).map((asset) => asset.blobKey));
+          const batch = [...pending.values()].filter((record) => keys.has(record.id));
           set({ saveStatus: 'saving', saveError: null });
-          revision = await saveSnapshot(snapshot, revision, batch);
+          revision = await saveSnapshot(snapshot, revision, batch, db, get().records);
           batch.forEach((record) => pending.delete(record.id));
           // An edit made while IndexedDB was writing must remain dirty and be saved next.
           if (get().project === snapshot) set({ dirty: false });
@@ -153,12 +159,17 @@ export function removeProject(id: string, expectedRevision?: number) {
   });
 }
 
+function currentImageBytes() {
+  const state = get(), keys = new Set(Object.values(state.project.assets).map((asset) => asset.blobKey));
+  return totalBytes([...state.records.values()].filter((record) => keys.has(record.id)));
+}
+
 export function addImages(files: File[]) {
   return exclusive(async () => {
     set({ imageErrors: [], progress: s.importing });
     validateBatch(files);
     const prepared: PreparedImage[] = [], errors: string[] = [];
-    let bytes = totalBytes(get().records.values());
+    let bytes = currentImageBytes();
     for (let index = 0; index < files.length; index++) {
       const file = files[index]!;
       try {
@@ -169,13 +180,13 @@ export function addImages(files: File[]) {
       set({ progress: s.progress(index + 1, files.length) });
     }
     if (prepared.length) {
-      const project = editProject(get().project, { type: 'images.add', images: prepared });
+      const next = recordEdit(get().project, get().history, { type: 'images.add', images: prepared });
       const records = new Map(get().records), thumbnails = { ...get().thumbnails };
       for (const image of prepared) {
         pending.set(image.record.id, image.record); records.set(image.record.id, image.record);
         thumbnails[image.asset.id] = URL.createObjectURL(image.record.thumbnail);
       }
-      set({ project, records, thumbnails, dirty: true, announcement: s.imported(prepared.length) });
+      set({ ...next, records, thumbnails, dirty: true, announcement: s.imported(prepared.length) });
       // Failure must not discard the validated images or prevent an emergency backup.
       await flushSave().catch(() => undefined);
     }
@@ -193,13 +204,13 @@ export function exportProject() {
 export function addBackground(file: File) {
   return exclusive(async () => {
     set({ progress: s.importing });
-    if (totalBytes(get().records.values()) + file.size > MAX_PROJECT_BYTES) throw new Error(s.projectLimit);
+    if (currentImageBytes() + file.size > MAX_PROJECT_BYTES) throw new Error(s.projectLimit);
     const image = await prepareImage(file, file.name);
-    const project = editProject(get().project, { type: 'design.background', asset: image.asset });
+    const next = recordEdit(get().project, get().history, { type: 'design.background', asset: image.asset });
     const records = new Map(get().records), thumbnails = { ...get().thumbnails };
     records.set(image.record.id, image.record); pending.set(image.record.id, image.record);
     thumbnails[image.asset.id] = URL.createObjectURL(image.record.thumbnail);
-    set({ project, records, thumbnails, dirty: true, announcement: d.backgroundAdded });
+    set({ ...next, records, thumbnails, dirty: true, announcement: d.backgroundAdded });
     await flushSave().catch(() => undefined);
   }, false);
 }

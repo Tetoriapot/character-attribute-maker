@@ -19,7 +19,7 @@ export const ja = {
   unranked: '未分類', unrankedItems: '未分類アイテム', destination: '移動先', move: '移動する',
   deleteItem: 'アイテムを削除', deleteItemTitle: 'このアイテムを削除しますか？',
   deleteItemMessage: 'アイテムの名前・説明・タグも削除します。この操作は元に戻せません。',
-  deleteTierUndo: 'ランクの削除は元に戻せません。',
+  deleteTierUndo: '削除後は「元に戻す」で復元できます。プロジェクトを切り替えると履歴は消えます。',
   emptyTray: '画像や文字を追加してください', emptyTrayHint: '追加したアイテムは、ドラッグまたは移動先の選択で配置できます。',
   emptyTier: 'ここにアイテムを配置', noTiers: 'ランクがありません', noTiersHint: '「ランクを追加」から作成してください。',
   add: '追加する', apply: '変更を適用', applied: '変更を適用しました。', added: '追加しました。',

@@ -1,4 +1,4 @@
-import { produce } from 'immer';
+import { produce, type PatchListener } from 'immer';
 import { z } from 'zod';
 import type { Asset, Crop, ID, Item, Project, Tier, TierStyle } from '../../data/types';
 import { createTier } from '../../data/defaults';
@@ -24,7 +24,8 @@ export type EditorCommand =
   | { type: 'images.add'; images: { asset: Asset; item: Item }[] }
   | { type: 'item.update'; id: ID; name: string; description: string; tags: string[] }
   | { type: 'item.delete' | 'item.duplicate'; id: ID }
-  | { type: 'item.move'; id: ID; tierId: ID | null; index?: number };
+  | { type: 'item.move'; id: ID; tierId: ID | null; index?: number }
+  | { type: 'items.move'; ids: ID[]; tierId: ID | null; index?: number };
 
 export class EditorError extends Error {}
 const nameSchema = z.string().trim().min(1).max(80);
@@ -72,7 +73,7 @@ function releaseAsset(project: Project, id: ID | null | undefined) {
 }
 
 // All placements change in one Immer transaction; a canceled or rejected command keeps the original state.
-export function editProject(project: Project, command: EditorCommand): Project {
+export function editProject(project: Project, command: EditorCommand, listener?: PatchListener): Project {
   const next = produce(project, (draft) => {
     switch (command.type) {
       case 'design.update': {
@@ -194,6 +195,25 @@ export function editProject(project: Project, command: EditorCommand): Project {
         releaseAsset(draft, assetId);
         break;
       }
+      case 'items.move': {
+        const selected = new Set(command.ids);
+        if (!selected.size || selected.size !== command.ids.length || command.ids.some((id) => !draft.items[id])) throw new EditorError(t.errors.missing);
+        if (command.tierId !== null) ensureUnlocked(getTier(draft, command.tierId));
+        for (const tier of draft.tiers) if (tier.itemIds.some((id) => selected.has(id))) ensureUnlocked(tier);
+        const ordered = [...draft.tiers.flatMap((tier) => tier.itemIds), ...draft.unrankedItemIds].filter((id) => selected.has(id));
+        const target = itemIdsAt(draft, command.tierId);
+        const index = clampIndex(command.index ?? target.length, target.length);
+        const to = index - target.slice(0, index).filter((id) => selected.has(id)).length;
+        const placements = [...draft.tiers.map((tier) => ({ id: tier.id, ids: tier.itemIds })), { id: null, ids: draft.unrankedItemIds }];
+        for (const placement of placements) {
+          const ids = placement.ids.filter((id) => !selected.has(id));
+          if (placement.id === command.tierId) ids.splice(to, 0, ...ordered);
+          if (ids.length === placement.ids.length && ids.every((id, index) => id === placement.ids[index])) continue;
+          if (placement.id === null) draft.unrankedItemIds = ids;
+          else getTier(draft, placement.id).itemIds = ids;
+        }
+        break;
+      }
       case 'item.move': {
         getItem(draft, command.id);
         if (command.tierId !== null) ensureUnlocked(getTier(draft, command.tierId));
@@ -207,7 +227,7 @@ export function editProject(project: Project, command: EditorCommand): Project {
         break;
       }
     }
-  });
+  }, listener);
   return next === project ? project : { ...next, updatedAt: new Date().toISOString() };
 }
 
