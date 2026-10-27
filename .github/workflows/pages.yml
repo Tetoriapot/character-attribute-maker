@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - README.md
+      - 'tier-atelier/**/*.md'
+      - 'tier-atelier/docs/**'
   workflow_dispatch:
 
 permissions:
@@ -35,23 +39,47 @@ jobs:
       - run: pnpm install --frozen-lockfile
         working-directory: tier-atelier
 
-      - name: Verify and build Tier Atelier
+      - name: Check types, lint and unit tests
         working-directory: tier-atelier
         run: |
           pnpm typecheck
           pnpm lint
           pnpm test
-          pnpm exec playwright install --with-deps chromium
+
+      - name: Install Chromium
+        working-directory: tier-atelier
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Browser regression tests
+        working-directory: tier-atelier
+        run: |
           mkdir -p .qa
           pnpm test:e2e --workers=2
-          pnpm test:pwa
-          pnpm build
+
+      - name: Offline and update tests
+        working-directory: tier-atelier
+        run: pnpm test:pwa
+
+      - name: Production build
+        working-directory: tier-atelier
+        run: pnpm build
 
       - name: Preserve existing site and add Tier Atelier
         run: |
           mkdir -p .pages/tier-atelier
           cp -a character-attribute-maker/. .pages/
           cp -a tier-atelier/dist/. .pages/tier-atelier/
+
+      - name: Save failed browser test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-test-diagnostics
+          path: |
+            tier-atelier/test-results/
+            tier-atelier/.qa/pwa-results/
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

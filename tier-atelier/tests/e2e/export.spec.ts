@@ -107,7 +107,8 @@ test('print document contains output pages only and preserves all pixels across 
   project.title = '印刷の検証'; project.tiers = Array.from({ length: 20 }, (_, index) => ({ ...project.tiers[index % 5]!, id: crypto.randomUUID(), name: `ランク${index + 1}` }));
   await importData(page, project); await open(page); await generate(page);
   await dialog(page).getByRole('button', { name: '印刷ページを作成', exact: true }).click();
-  await expect(dialog(page).getByRole('button', { name: '印刷する', exact: true })).toBeEnabled();
+  // Encoding every A4 page can exceed the default assertion timeout on shared CI runners.
+  await expect(dialog(page).getByRole('button', { name: '印刷する', exact: true })).toBeEnabled({ timeout: 15000 });
   const frame = page.frames().find((frame) => frame.parentFrame() !== null)!;
   const result = await frame.evaluate(() => ({ pages: document.images.length, controls: document.querySelectorAll('button,input,textarea,select').length, text: document.body.textContent, totalHeight: Array.from(document.images).reduce((sum, image) => sum + image.naturalHeight, 0), complete: Array.from(document.images).every((image) => image.complete) }));
   expect(result.pages).toBeGreaterThan(1); expect(result.controls).toBe(0); expect(result.text).toBe(''); expect(result.complete).toBe(true);

@@ -28,7 +28,7 @@ PWAにはHTTPSが必要です。ローカルのlocalhost・127.0.0.1でも検証
 このリポジトリの`.github/workflows/pages.yml`で2つのアプリを配信します。キャラ属性メーカーを既存のルートへ置き、TIER ATELIERをその下の`tier-atelier/`へ追加します。同じPagesへ別々のワークフローから配信すると公開物が置き換わるため、1つの配信成果物にまとめます。
 
 1. GitHubのSettings → PagesでSourceをGitHub Actionsにします。公開用ブランチとEnvironmentの制限を確認します。このリポジトリでは既存のPages設定を利用します。
-2. 変更を`main`へpushすると、Actionsの「Deploy to GitHub Pages」が自動実行されます。Actions画面から手動実行もできます。
+2. アプリや公開設定の変更を`main`へpushすると、Actionsの「Deploy to GitHub Pages」が自動実行されます。ルートREADMEとTIER ATELIERのMarkdown・`docs/`だけの変更では配信しません。Actions画面から手動実行もできます。
 3. Node.js 24.19.0とpnpm 11.25.0で依存関係を固定インストールし、型チェック・lint・単体テスト・PC／スマホのブラウザ回帰・PWAテスト・ビルドを実行します。失敗した場合は公開処理へ進みません。
 4. 成功後、キャラ属性メーカーを`.pages/`、TIER ATELIERの`dist/`の内容を`.pages/tier-atelier/`へコピーしてまとめて配信します。
 5. [既存サイト](https://tetoriapot.github.io/character-attribute-maker/)と[TIER ATELIER](https://tetoriapot.github.io/character-attribute-maker/tier-atelier/)を開き、公開後確認を行います。

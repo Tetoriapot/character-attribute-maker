@@ -31,7 +31,7 @@
 
 ## GitHub Pagesで全体公開する
 
-このリポジトリには、`main`ブランチへの更新時に2つのアプリをGitHub Pagesへ自動公開するワークフローが含まれています。キャラ属性メーカーをルート、TIER ATELIERを`tier-atelier/`へ配置します。TIER ATELIERの型チェック・lint・単体・ブラウザ・PWAテストとビルドが成功してから、まとめて配信します。
+このリポジトリには、`main`ブランチでアプリや公開設定を更新したときに、2つのアプリをGitHub Pagesへ自動公開するワークフローが含まれています。キャラ属性メーカーをルート、TIER ATELIERを`tier-atelier/`へ配置します。TIER ATELIERの型チェック・lint・単体・ブラウザ・PWAテストとビルドが成功してから、まとめて配信します。ルートREADMEとTIER ATELIERのMarkdown・`docs/`だけの更新では配信しません。
 
 1. GitHubで新しいリポジトリを作成し、公開範囲を **Public** にします。
 2. このフォルダーの内容を `main` ブランチへpushします。
