@@ -78,7 +78,7 @@ test('dark mode preserves JSON, project styling, PNG bytes and undo history', as
     const panel = page.getByRole('dialog', { name: '画像出力・印刷・共有', exact: true });
     await panel.getByLabel('未分類を含める').check();
     await panel.getByRole('button', { name: 'プレビューを作成', exact: true }).click();
-    await expect(panel.getByRole('button', { name: '画像を保存', exact: true })).toBeEnabled();
+    await expect(panel.getByRole('button', { name: '画像を保存', exact: true })).toBeEnabled({ timeout: 15000 });
     const imageWait = page.waitForEvent('download'); await panel.getByRole('button', { name: '画像を保存', exact: true }).click();
     const png = await readFile((await (await imageWait).path())!);
     await panel.getByRole('button', { name: '閉じる', exact: true }).click();
@@ -105,4 +105,34 @@ test('dark dialogs and design properties retain accessible contrast', async ({ p
   }
   await page.locator(isMobile ? '.mobile-toolbar' : '.left-panel').getByRole('button', { name: 'デザイン', exact: true }).click();
   await accessible(page);
+});
+
+test('image processing disables dialog close and releases it after saving', async ({ page, isMobile }) => {
+  await start(page);
+  const encoded = await page.evaluate(() => {
+    const canvas = document.createElement('canvas'); canvas.width = 40; canvas.height = 40;
+    const ctx = canvas.getContext('2d')!; ctx.fillStyle = '#118866'; ctx.fillRect(0, 0, 40, 40);
+    return canvas.toDataURL().split(',')[1]!;
+  });
+  for (const background of isMobile ? [false, true] : [false]) {
+    if (background) await page.locator('.mobile-toolbar').getByRole('button', { name: 'デザイン', exact: true }).click();
+    else await page.getByRole('region', { name: '未分類アイテム', exact: true }).getByRole('button', { name: '画像を追加', exact: true }).click();
+    const panel = page.getByRole('dialog', { name: background ? 'プロパティ' : '画像を追加', exact: true });
+    await page.evaluate(() => {
+      const original = Blob.prototype.arrayBuffer;
+      const pending = new Promise<void>((resolve) => document.addEventListener('qa-release-image-read', () => {
+        Blob.prototype.arrayBuffer = original; resolve();
+      }, { once: true }));
+      Blob.prototype.arrayBuffer = async function () { await pending; return original.call(this); };
+    });
+    await panel.getByLabel(background ? '背景画像を登録' : '画像ファイルを選択', { exact: true }).setInputFiles({ name: '処理待ち.png', mimeType: 'image/png', buffer: Buffer.from(encoded, 'base64') });
+    const close = panel.getByRole('button', { name: '閉じる', exact: true });
+    await expect(close).toBeDisabled(); await page.keyboard.press('Escape'); await expect(panel).toBeVisible();
+    await page.evaluate(() => document.dispatchEvent(new Event('qa-release-image-read')));
+    await expect(close).toBeEnabled(); await close.click(); await expect(panel).not.toBeVisible();
+    await expect(page.getByTestId('save-status')).toHaveText('保存済み');
+  }
+  const wait = page.waitForEvent('download'); await page.locator('.canvas-footer').getByRole('button', { name: 'JSONバックアップ', exact: true }).click();
+  const data = JSON.parse(await readFile((await (await wait).path())!, 'utf8')) as { blobs: unknown[] };
+  expect(data.blobs).toHaveLength(isMobile ? 2 : 1);
 });

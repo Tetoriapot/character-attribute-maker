@@ -148,14 +148,14 @@ export default function App() {
         <button onClick={() => setDialog('properties')}><Icon name="settings" /><span>{t.settings}</span></button>
         <button onClick={() => choose({ kind: 'design' })}><Icon name="panel" /><span>{d.title}</span></button>
       </nav>
-      {dialog === 'add' && <Dialog title={t.addTextTitle} onClose={closeDialog}><ItemForm onDone={closeDialog} /><Feedback /></Dialog>}
-      {dialog === 'updates' && <Dialog title={c.updates} onClose={closeDialog}><ReleaseNotes /></Dialog>}
-      {dialog === 'help' && <Dialog title={t.helpTitle} onClose={closeDialog}><div className="help-content"><h3>{t.tiers}</h3><p>{t.helpTier}</p><p>{t.helpDelete}</p><h3>{t.items}</h3><p>{t.helpItem}</p><h3>{h.tools}</h3><p>{h.historyHint}</p><p>{h.shortcuts}</p><p>{h.selectionHint}</p><p>{h.virtualHint}</p><h3>{t.settings}</h3><p>{t.helpKeyboard}</p><p>{t.helpTouch}</p><h3>{c.appearanceTitle}</h3><p>{c.appearanceHelp}</p><h3>{c.backupTitle}</h3><p>{c.backupHelp}</p><h3>{c.exportTitle}</h3><p>{c.exportHelp}</p><h3>{c.offlineTitle}</h3><p>{c.offlineHelp}</p><div className="notice-inline">{t.storageNotice}</div></div></Dialog>}
-      {dialog === 'tiers' && <Dialog drawer title={t.tierList} onClose={closeDialog}><Sidebar onSelect={choose} onAddTier={addTier} onAddText={addText} /></Dialog>}
-      {dialog === 'properties' && <Dialog drawer title={t.properties} onClose={closeDialog}><Properties key={editEpoch} /></Dialog>}
-      {dialog === 'projects' && <Dialog title={s.projects} onClose={closeDialog}><ProjectManager onClose={closeDialog} /></Dialog>}
-      {dialog === 'images' && <Dialog title={s.images} onClose={closeDialog}><ImageImport /></Dialog>}
-      {dialog === 'export' && <Dialog title={e.title} onClose={closeDialog}><Suspense fallback={<p role="status">{e.updating}</p>}><ExportPanel key={project.id} /></Suspense></Dialog>}
+      {dialog === 'add' && <Dialog title={t.addTextTitle} onClose={closeDialog} closeDisabled={busy}><ItemForm onDone={closeDialog} /><Feedback /></Dialog>}
+      {dialog === 'updates' && <Dialog title={c.updates} onClose={closeDialog} closeDisabled={busy}><ReleaseNotes /></Dialog>}
+      {dialog === 'help' && <Dialog title={t.helpTitle} onClose={closeDialog} closeDisabled={busy}><div className="help-content"><h3>{t.tiers}</h3><p>{t.helpTier}</p><p>{t.helpDelete}</p><h3>{t.items}</h3><p>{t.helpItem}</p><h3>{h.tools}</h3><p>{h.historyHint}</p><p>{h.shortcuts}</p><p>{h.selectionHint}</p><p>{h.virtualHint}</p><h3>{t.settings}</h3><p>{t.helpKeyboard}</p><p>{t.helpTouch}</p><h3>{c.appearanceTitle}</h3><p>{c.appearanceHelp}</p><h3>{c.backupTitle}</h3><p>{c.backupHelp}</p><h3>{c.exportTitle}</h3><p>{c.exportHelp}</p><h3>{c.offlineTitle}</h3><p>{c.offlineHelp}</p><div className="notice-inline">{t.storageNotice}</div></div></Dialog>}
+      {dialog === 'tiers' && <Dialog drawer title={t.tierList} onClose={closeDialog} closeDisabled={busy}><Sidebar onSelect={choose} onAddTier={addTier} onAddText={addText} /></Dialog>}
+      {dialog === 'properties' && <Dialog drawer title={t.properties} onClose={closeDialog} closeDisabled={busy}><Properties key={editEpoch} /></Dialog>}
+      {dialog === 'projects' && <Dialog title={s.projects} onClose={closeDialog} closeDisabled={busy}><ProjectManager onClose={closeDialog} /></Dialog>}
+      {dialog === 'images' && <Dialog title={s.images} onClose={closeDialog} closeDisabled={busy}><ImageImport /></Dialog>}
+      {dialog === 'export' && <Dialog title={e.title} onClose={closeDialog} closeDisabled={busy}><Suspense fallback={<p role="status">{e.updating}</p>}><ExportPanel key={project.id} /></Suspense></Dialog>}
       <SharedProject />
       <span className="visually-hidden">{h.shortcuts}</span>
     </div>

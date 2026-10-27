@@ -80,6 +80,7 @@ jobs:
             tier-atelier/.qa/pwa-results/
           retention-days: 7
           if-no-files-found: ignore
+          include-hidden-files: true
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

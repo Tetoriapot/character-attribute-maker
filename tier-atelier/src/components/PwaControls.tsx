@@ -20,7 +20,7 @@ export function PwaControls() {
         <button className="button secondary small" onClick={() => usePwa.setState({ dismissed: true })}>{p.later}</button>
       </div>
     </aside>}
-    {open && <Dialog title={p.title} onClose={() => { if (!state.applying) setOpen(false); }}>
+    {open && <Dialog title={p.title} closeDisabled={state.applying} onClose={() => { if (!state.applying) setOpen(false); }}>
       <div className="pwa-panel" aria-busy={state.applying}>
         <p role="status" data-testid="offline-status">{state.mode === 'development' ? p.development : state.mode === 'unsupported' ? p.unsupported : state.offlineReady ? p.ready : p.preparing}</p>
         {!state.online && <p>{p.offline}。{state.offlineReady ? p.offlineHint : p.notReady}</p>}

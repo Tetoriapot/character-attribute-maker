@@ -55,7 +55,7 @@ export function ProjectManager({ onClose }: { onClose: () => void }) {
     {progress && <p className="field-hint" aria-live="polite">{progress}</p>}
     {saveError && <p className="form-error" role="alert">{saveError}</p>}
     <Feedback />
-    {deleting && <Dialog title={s.deleteTitle} onClose={() => { if (!busy) setDeleting(undefined); }}>
+    {deleting && <Dialog title={s.deleteTitle} closeDisabled={busy} onClose={() => { if (!busy) setDeleting(undefined); }}>
       <p className="delete-name">{deleting.title}</p><p>{s.deleteHint}</p>
       <div className="dialog-actions"><button className="button secondary" disabled={busy} onClick={() => setDeleting(undefined)}>{t.cancel}</button>
         <button className="button danger" disabled={busy} onClick={() => {

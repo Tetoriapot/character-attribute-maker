@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import { t } from '../app/messages';
 
-export function Dialog({ title, children, onClose, drawer = false }: { title: string; children: ReactNode; onClose: () => void; drawer?: boolean }) {
+export function Dialog({ title, children, onClose, drawer = false, closeDisabled = false }: { title: string; children: ReactNode; onClose: () => void; drawer?: boolean; closeDisabled?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   useEffect(() => {
@@ -24,8 +24,8 @@ export function Dialog({ title, children, onClose, drawer = false }: { title: st
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     }}
-    onCancel={(event) => { event.preventDefault(); onClose(); }}>
-    <div className="dialog-heading"><h2 id={titleId}>{title}</h2><button type="button" className="icon-button" onClick={onClose} aria-label={t.close} autoFocus><Icon name="close" /></button></div>
+    onCancel={(event) => { event.preventDefault(); if (!closeDisabled) onClose(); }}>
+    <div className="dialog-heading"><h2 id={titleId}>{title}</h2><button type="button" className="icon-button" disabled={closeDisabled} onClick={onClose} aria-label={t.close} autoFocus><Icon name="close" /></button></div>
     <div className="dialog-content">{children}</div>
   </dialog>;
 }
