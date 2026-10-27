@@ -20,6 +20,6 @@ export function Sidebar({ onSelect, onAddTier, onAddText }: { onSelect: (selecti
       <button className="add-item-button" onClick={onAddText}><span className="text-icon"><Icon name="text" size={21} /></span><span>{t.textItem}</span><Icon name="plus" size={17} /></button><p className="field-hint">{t.textOnlyNotice}</p>
     </div>
     <div className="storage-note"><Icon name="info" size={18} /><div><h3>{t.storageTitle}</h3><p>{t.storageNotice}</p></div></div>
-    <div className="sidebar-footer"><span>{t.brand}</span><span>v0.6</span></div>
+    <div className="sidebar-footer"><span>{t.brand}</span><span>v0.7</span></div>
   </div>;
 }

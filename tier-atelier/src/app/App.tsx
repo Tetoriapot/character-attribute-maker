@@ -22,6 +22,8 @@ import { HistoryTools } from '../components/EditingTools';
 import { h } from './editingMessages';
 import { PwaControls } from '../components/PwaControls';
 import { usePwa } from '../features/pwa/client';
+import { ReleaseNotes, ThemeFeedback, ThemeToggle } from '../components/HeaderTools';
+import { headerText as c } from './headerMessages';
 
 const ExportPanel = lazy(() => import('../components/ExportPanel'));
 
@@ -50,7 +52,7 @@ export default function App() {
   const compact = useCompactLayout();
   const [leftVisible, setLeftVisible] = useState(true);
   const [rightVisible, setRightVisible] = useState(true);
-  const [dialog, setDialog] = useState<'add' | 'help' | 'tiers' | 'properties' | 'projects' | 'images' | 'export' | null>(null);
+  const [dialog, setDialog] = useState<'add' | 'help' | 'updates' | 'tiers' | 'properties' | 'projects' | 'images' | 'export' | null>(null);
   const project = useEditor((state) => state.project);
   const editEpoch = useEditor((state) => state.editEpoch);
   const dirty = useEditor((state) => state.dirty);
@@ -113,8 +115,14 @@ export default function App() {
       <header className="app-header">
         <div className="brand"><span className="brand-mark" aria-hidden="true"><i /><i /><i /></span><div><strong>{t.brand}</strong><span>{t.tagline}</span></div></div>
         <div className="header-project"><span className="header-divider" /><button onClick={() => choose({ kind: 'project' })} title={t.projectSettings}>{project.title}<Icon name="down" size={14} /></button></div>
-        <div className="header-actions"><button className="button secondary small projects-button" disabled={busy} onClick={() => showDialog('projects')}>{s.projects}</button><button className="help-button" disabled={busy} aria-label={t.help} onClick={() => showDialog('help')}><Icon name="help" /><span>{t.help}</span></button></div>
+        <button className="button secondary small projects-button" disabled={busy} onClick={() => showDialog('projects')}>{s.projects}</button>
+        <div className="header-actions">
+          <button className="header-tool" disabled={busy} onClick={() => showDialog('updates')}><Icon name="info" /><span>{c.updates}</span></button>
+          <ThemeToggle />
+          <button className="header-tool help-button" disabled={busy} aria-label={c.helpLabel} onClick={() => showDialog('help')}><Icon name="help" /><span>{c.help}</span></button>
+        </div>
       </header>
+      <ThemeFeedback />
       <div className="workspace-bar"><div className="workspace-title"><Icon name="layers" size={16} /><span>{t.editor}</span><button className="button secondary small export-open" disabled={busy} onClick={() => showDialog('export')}>{e.open}</button></div>
         <HistoryTools />
         <PwaControls />
@@ -141,7 +149,8 @@ export default function App() {
         <button onClick={() => choose({ kind: 'design' })}><Icon name="panel" /><span>{d.title}</span></button>
       </nav>
       {dialog === 'add' && <Dialog title={t.addTextTitle} onClose={closeDialog}><ItemForm onDone={closeDialog} /><Feedback /></Dialog>}
-      {dialog === 'help' && <Dialog title={t.helpTitle} onClose={closeDialog}><div className="help-content"><h3>{t.tiers}</h3><p>{t.helpTier}</p><p>{t.helpDelete}</p><h3>{t.items}</h3><p>{t.helpItem}</p><h3>{h.tools}</h3><p>{h.historyHint}</p><p>{h.shortcuts}</p><p>{h.selectionHint}</p><p>{h.virtualHint}</p><h3>{t.settings}</h3><p>{t.helpKeyboard}</p><p>{t.helpTouch}</p><div className="notice-inline">{t.storageNotice}</div></div></Dialog>}
+      {dialog === 'updates' && <Dialog title={c.updates} onClose={closeDialog}><ReleaseNotes /></Dialog>}
+      {dialog === 'help' && <Dialog title={t.helpTitle} onClose={closeDialog}><div className="help-content"><h3>{t.tiers}</h3><p>{t.helpTier}</p><p>{t.helpDelete}</p><h3>{t.items}</h3><p>{t.helpItem}</p><h3>{h.tools}</h3><p>{h.historyHint}</p><p>{h.shortcuts}</p><p>{h.selectionHint}</p><p>{h.virtualHint}</p><h3>{t.settings}</h3><p>{t.helpKeyboard}</p><p>{t.helpTouch}</p><h3>{c.appearanceTitle}</h3><p>{c.appearanceHelp}</p><h3>{c.backupTitle}</h3><p>{c.backupHelp}</p><h3>{c.exportTitle}</h3><p>{c.exportHelp}</p><h3>{c.offlineTitle}</h3><p>{c.offlineHelp}</p><div className="notice-inline">{t.storageNotice}</div></div></Dialog>}
       {dialog === 'tiers' && <Dialog drawer title={t.tierList} onClose={closeDialog}><Sidebar onSelect={choose} onAddTier={addTier} onAddText={addText} /></Dialog>}
       {dialog === 'properties' && <Dialog drawer title={t.properties} onClose={closeDialog}><Properties key={editEpoch} /></Dialog>}
       {dialog === 'projects' && <Dialog title={s.projects} onClose={closeDialog}><ProjectManager onClose={closeDialog} /></Dialog>}

@@ -1,5 +1,11 @@
 # データ設計
 
+## 編集画面の表示モード
+
+ライト・ダークの選択はLocalStorageの`tier-atelier.appearance.v1`に`light`または`dark`を保存します。不明な値や読み込み失敗時は端末の配色設定を使います。未選択の間は端末の配色変更に追従し、明示的に切り替えた後は保存した選択を優先します。
+
+この設定はプロジェクト・JSON・Undo履歴から分離しています。保存失敗時も現在の画面には反映し、エラーを表示します。schemaVersion・backupVersion・IndexedDBのバージョンは変更しません。
+
 ## PWAのキャッシュと保存データ
 
 フェーズ6でもschemaVersion、backupVersion、IndexedDBのバージョンは1を維持します。更新通知・インストール状態はメモリに保持し、プロジェクトやJSONのキーは変更していません。

@@ -1,0 +1,16 @@
+export const headerText = {
+  updates: '更新情報', help: 'Help', helpLabel: 'Help（使い方）',
+  light: 'ライトモード', dark: 'ダークモード',
+  switchTo: (current: string, next: string) => `${current}：${next}に切り替え`,
+  themeStorageError: '表示モードを保存できませんでした。切り替えは反映されていますが、再読み込みすると元に戻る場合があります。',
+  currentVersion: '使用中のバージョン',
+  updateHint: 'アプリの更新確認・適用とインストールは「アプリ・オフライン」から操作できます。',
+  appearanceTitle: '画面の表示モード',
+  appearanceHelp: '右上の表示モードボタンでライトとダークを切り替えます。初回は端末の設定に従い、切り替え後はこのブラウザに保存します。Tier表のデザインや出力画像は変わりません。',
+  backupTitle: '保存とバックアップ',
+  backupHelp: '編集内容と画像は、このブラウザのIndexedDBに自動保存します。「プロジェクト一覧」から画像を含むJSONを保存・復元できます。別の端末やブラウザへ移す場合もJSONを使います。',
+  exportTitle: '画像出力・印刷・共有',
+  exportHelp: '「出力・共有」からPNG・JPEG・WebP、倍率、透過背景、タイトルと未分類の有無を設定できます。印刷・共有もここから操作します。',
+  offlineTitle: 'オフラインと更新',
+  offlineHelp: '「アプリ・オフライン」で準備完了を確認すると、保存済みプロジェクトを通信なしで編集できます。更新通知が表示されたら、入力を適用してから更新してください。',
+};

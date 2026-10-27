@@ -25,16 +25,15 @@ PWAにはHTTPSが必要です。ローカルのlocalhost・127.0.0.1でも検証
 
 ## GitHub Pages
 
-このリポジトリの`.github/workflows/pages.yml`は、現在`character-attribute-maker/`だけを公開しています。フェーズ6ではこの設定を変更していません。
+このリポジトリの`.github/workflows/pages.yml`で2つのアプリを配信します。キャラ属性メーカーを既存のルートへ置き、TIER ATELIERをその下の`tier-atelier/`へ追加します。同じPagesへ別々のワークフローから配信すると公開物が置き換わるため、1つの配信成果物にまとめます。
 
-併設用の設定例を[github-pages.yml](deployment/github-pages.yml)に用意しました。キャラ属性メーカーを既存のルートへ置き、TIER ATELIERをその下の`tier-atelier/`へ追加する構成です。このファイルは`docs/`内にあるため自動実行されません。
+1. GitHubのSettings → PagesでSourceをGitHub Actionsにします。公開用ブランチとEnvironmentの制限を確認します。このリポジトリでは既存のPages設定を利用します。
+2. 変更を`main`へpushすると、Actionsの「Deploy to GitHub Pages」が自動実行されます。Actions画面から手動実行もできます。
+3. Node.js 24.19.0とpnpm 11.25.0で依存関係を固定インストールし、型チェック・lint・単体テスト・PC／スマホのブラウザ回帰・PWAテスト・ビルドを実行します。失敗した場合は公開処理へ進みません。
+4. 成功後、キャラ属性メーカーを`.pages/`、TIER ATELIERの`dist/`の内容を`.pages/tier-atelier/`へコピーしてまとめて配信します。
+5. [既存サイト](https://tetoriapot.github.io/character-attribute-maker/)と[TIER ATELIER](https://tetoriapot.github.io/character-attribute-maker/tier-atelier/)を開き、公開後確認を行います。
 
-1. 公開を始めるときに、既存の`pages.yml`を保管し、設定例の内容へ変更します。同じPagesへ別々のワークフローから配信すると公開物が置き換わるため、既存サイトとまとめて1回で配信します。
-2. GitHubのSettings → PagesでSourceをGitHub Actionsにします。公開用ブランチとEnvironmentの制限を確認します。
-3. 初回はmainへ反映後、Actionsの「Deploy tools to GitHub Pages」を手動実行します。設定例は`workflow_dispatch`だけを使い、pushによる自動公開は有効にしていません。
-4. ジョブに表示される公開URLでキャラ属性メーカーを確認し、そのURLの末尾に`tier-atelier/`を付けてTIER ATELIERを開きます。リポジトリ名がURLに含まれる場合も、その配下です。
-
-設定例では公開前に型チェック・lint・単体テスト・ブラウザ回帰・PWAテスト・ビルドを実行します。GitHub Actions上での実行はまだ行っていません。権限とPages用アクションは[GitHub公式のカスタムワークフロー手順](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)に基づいています。
+権限とPages用アクションは[GitHub公式のカスタムワークフロー手順](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)に基づいています。[手動公開だけを行う設定例](deployment/github-pages.yml)も保持しています。この設定例は`docs/`内にあり、自動実行されません。
 
 TIER ATELIERだけを別のリポジトリへ公開する場合は、ビルドの作業ディレクトリをその構成に合わせ、アップロード対象を`dist/`にします。既存サイトと同じURLへ単独の`dist/`を配信すると既存サイトを置き換えるため、公開先を確認してください。
 
@@ -59,7 +58,7 @@ HTTPキャッシュを設定できるサーバーでは、`sw.js`・`index.html`
 
 ## 公開後の確認
 
-公開先で次の一連の操作を行います。今回の自動テストはローカルの本番ビルドを対象としており、公開先での確認は未実施です。
+公開先で次の一連の操作を行います。ローカルの本番ビルドでのテストと、公開先での確認は分けて記録します。
 
 1. HTTPS、JavaScript・Manifest・Service Workerの応答、コンソールにエラーがないことを確認します。「アプリ・オフライン」で準備完了を確認します。
 2. 画像を20枚以上登録し、Tier移動とデザイン変更を保存します。JSONをダウンロードして復元し、画像と編集内容を確認します。

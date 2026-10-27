@@ -118,7 +118,7 @@ test('blank names are rejected and HTML is rendered as text', async ({ page, isM
 });
 
 test('keyboard form interaction, focus trap and focus restoration work', async ({ page }) => {
-  const help = page.getByRole('button', { name: '使い方', exact: true });
+  const help = page.getByRole('button', { name: 'Help（使い方）', exact: true });
   await help.focus();
   await page.keyboard.press('Enter');
   const dialog = page.getByRole('dialog', { name: '基本操作' });

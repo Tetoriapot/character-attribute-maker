@@ -2,9 +2,9 @@
 
 ## 作業範囲
 
-フェーズ1〜4に続き、フェーズ5のUndo・Redo、検索・一括操作、表示支援、仮想スクロールを実装しました。企画書原文は[original-proposal.txt](original-proposal.txt)に保持しています。原文の要件は削除せず、各フェーズのタスクを[TASKS.md](../TASKS.md)に整理しています。
+フェーズ6のPWA・オフライン対応まで実装しました。追加依頼により、右上の更新情報・表示モード切替・HelpとGitHub Pages公開を進めています。企画書原文は[original-proposal.txt](original-proposal.txt)に保持しています。原文の要件は削除せず、各フェーズのタスクを[TASKS.md](../TASKS.md)に整理しています。
 
-同じリポジトリにある`character-attribute-maker/`は別アプリです。既存の変更、保存形式、操作、公開ワークフローを保持し、新しい`tier-atelier/`にReactアプリを追加します。
+同じリポジトリにある`character-attribute-maker/`は別アプリです。既存の変更、保存形式、操作を保持します。公開ワークフローは既存サイトをルートへ配置したまま、Reactアプリを`tier-atelier/`へ追加する構成に拡張します。
 
 ## フェーズ
 
