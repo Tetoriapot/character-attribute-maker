@@ -1,0 +1,573 @@
+# TIER ATELIER
+
+ティアアトリエ｜全部入りTier Listメーカー 開発企画書 v1.0
+
+Codexで実装することを前提に、機能仕様・画面設計・データ設計・技術構成・開発順序までまとめた企画書を作ろう！
+
+目指すのは、単にS・A・B・Cに画像を並べるだけではなく、自分好みのランキング画像を制作できるデザインツール。
+
+PCでは本格的な編集、スマートフォンでは直感的なタッチ操作ができ、作成したTier表を保存・再編集・共有できるサービスにする。
+
+PRODUCT CONCEPT
+
+企画 v1.0
+
+[AI Ranks Anything](https://images.openai.com/static-rsc-4/dG8m1uVwpKRSVIHcfKp5ugZpTn4ak8gDUnXtoiBFwmc2El_UQy6BCyJlqBbKUfAQrOY6s6yvqYy_ITuJSs6vKdfWJbAt1-HYGMyBK5CMERC34E2XmhsBZs_PCmNlz5q3cJz3iD9DZ0uEv9DbGI3aRLw68ttcR7bbE_RPbBOqRlE?purpose=inline)
+
+[Icons8 Lunacy 9.5 Screenshot 3](https://images.openai.com/static-rsc-4/kZS5IyU_AcjKhvBBnZEAhRczMoJQsHJ8HsUfdXH4XPytkEFzVvQmb6_E-_efkH3g_qFEf5nMiMVPiCG_UXeaSsVFGGJhDIY6j7T0gbo2QzvSzhVvsh_aJYGyYBbh-0vy9IvMc_Le7imooYcBfo772krp1oN_M9a76htr9leLPgE?purpose=inline)
+
+デザイン方向の参考イメージ。実際の画面構成は以下で定義。
+
+## 1. プロダクト概要
+
+| 項目     | 仕様                        |
+| ------ | ------------------------- |
+| 名称     | TIER ATELIER              |
+| 種別     | ブラウザ型Tier List制作ツール       |
+| 対象     | 創作者、ゲーム・TRPGユーザー、ランキング作成者 |
+| 対応     | PC・Android・iPhone         |
+| 公開形式   | 静的Webサイト＋PWA              |
+| 基本料金   | 無料・ログイン不要                 |
+| データ保存  | IndexedDB＋JSON            |
+| 画像出力   | PNG・JPEG・WebP             |
+| 開発環境   | Codex＋GitHub              |
+| ホスティング | さくらのレンタルサーバー等             |
+
+### 設計方針
+
+- 自由度：ランク数・色・レイアウト・画像表示方法を細かく変更できる。
+- 操作性：画像を追加してドラッグするだけで基本操作が完結する。
+- デザイン性：SNS投稿や作品紹介にも使える美しい画像を出力できる。
+- プライバシー：画像や編集データは原則としてユーザーのブラウザ内で処理する。
+- 拡張性：将来は二軸マトリクスやランキング比較機能も追加できる構成にする。
+
+## 2. 機能仕様
+
+A. Tier表編集
+
+ランクの追加・削除・複製・並べ替え、自由な名前、個別の背景色・文字色、ランクの高さと幅の調整。S〜Dだけでなく「神」「好き」「未履修」などにも対応。
+
+B. アイテム管理
+
+画像の一括登録、ドラッグ＆ドロップ、クリップボード貼り付け、名前・説明・タグ設定、画像トリミング、重複登録、未分類トレイ。
+
+C. デザインカスタマイズ
+
+背景色・背景画像・フォント・枠線・角丸・余白・画像サイズ・影・グラデーション・パターン背景・見出しの装飾。
+
+D. テンプレート
+
+クラシック、ミニマル、ゲームUI、レトロ、ポップ、サイバー、ゴシック、和風など。ランク設定のみ変更するプリセットと、全体デザインを変更するテーマを区別。
+
+E. 保存・共有・出力
+
+自動保存、プロジェクト一覧、JSONバックアップ・復元、画像書き出し、印刷向け出力、共有用ファイル、URLに収まる軽量データの共有。
+
+F. 編集補助
+
+Undo・Redo、アイテム検索、タグフィルター、複数選択、一括移動、キーボード操作、表示倍率変更、グリッド表示。
+
+## 3. 画面設計
+
+### 3-1. PC版：メインエディター
+
+TIER ATELIER
+
+キャラクターお気に入りランキング
+
+S
+
+🐉
+
+👑
+
+🌟
+
+A
+
+🦊
+
+🌹
+
+B
+
+🐈
+
+🦋
+
+🌙
+
+C
+
+🧸
+
+未分類アイテム
+
+🎭
+
+🗡️
+
+💠
+
+🐺
+
+プロパティ
+
+背景色
+
+画像サイズ
+
+余白・角丸
+
+画面構成の模式図（実際は左右パネルを広く表示）
+
+PCでは以下の3カラム構成を採用する。
+
+| 領域      | 役割                 |
+| ------- | ------------------ |
+| 左パネル    | 素材ライブラリ・ランク一覧・テーマ  |
+| 中央キャンバス | Tier表の直接編集・ズーム     |
+| 右パネル    | 選択対象の詳細設定          |
+| 上部バー    | プロジェクト名・保存・Undo・出力 |
+| 下部トレイ   | 未分類アイテム・検索・一括操作    |
+
+左右パネルは折りたたみ可能。キャンバスはスクロールとズームに対応し、パネルを閉じた状態で広く編集できる。
+
+### 3-2. スマートフォン版
+
+スマホでは横3カラムをそのまま縮小せず、Tier表＋下部ツールバー＋設定ドロワーに切り替える。
+
+TIER ATELIER
+
+推しキャラTier表
+
+S
+
+## 🐉
+
+## 👑
+
+## 🌟
+
+A
+
+## 🦊
+
+## 🌹
+
+B
+
+## 🐈
+
+## 🦋
+
+## 🌙
+
+C
+
+## 🧸
+
+未分類
+
+🎭
+
+🗡️
+
+💠
+
+🐺
+
+スマホの操作は、タップで選択、長押ししてドラッグ、または「移動先ランクを選択」で配置できるようにする。ドラッグが難しい場合でも、すべての操作をタップだけで完結できる設計にする。
+
+## 4. データ設計
+
+データは「プロジェクト」「ランク」「アイテム」「画像素材」「デザイン設定」に分離する。
+
+画像そのものをプロジェクト情報に直接埋め込まず、IndexedDBにBlobとして保存することで、大量の画像を扱いやすくする。
+
+### 4-1. データ構造
+
+```
+Project
+ ├── id
+ ├── title
+ ├── description
+ ├── createdAt / updatedAt
+ ├── tiers[]
+ │    ├── id
+ │    ├── name
+ │    ├── background / foreground
+ │    └── itemIds[]
+ ├── unrankedItemIds[]
+ ├── items{}
+ │    └── itemId → Item
+ ├── assets{}
+ │    └── assetId → Asset
+ └── style
+      ├── background
+      ├── fontFamily
+      ├── labelWidth
+      ├── itemSize
+      ├── gap / radius
+      └── imageFit
+```
+
+### 4-2. TypeScript型定義
+
+```
+
+type ID = string;
+
+interface Tier {
+  id: ID;
+  name: string;
+  background: string;
+  foreground: string;
+  itemIds: ID[];
+  minHeight?: number;
+  locked?: boolean;
+}
+
+interface Item {
+  id: ID;
+  assetId: ID | null;
+  name: string;
+  description: string;
+  tags: string[];
+  createdAt: string;
+}
+
+interface Asset {
+  id: ID;
+  blobKey: ID;
+  mimeType: string;
+  width: number;
+  height: number;
+  originalName: string;
+}
+
+interface TierStyle {
+  background: string;
+  fontFamily: string;
+  labelWidth: number;
+  itemSize: number;
+  gap: number;
+  radius: number;
+  imageFit: "cover" | "contain";
+  showItemNames: boolean;
+  showTitle: boolean;
+  borderColor: string;
+}
+
+interface Project {
+  schemaVersion: 1;
+  id: ID;
+  title: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+  tiers: Tier[];
+  unrankedItemIds: ID[];
+  items: Record<ID, Item>;
+  assets: Record<ID, Asset>;
+  style: TierStyle;
+}
+
+```
+
+重要なルールは、1つのアイテムIDは必ず1か所にだけ配置されること。ランク内と未分類トレイに重複して登録されないよう、移動操作を一括更新する。
+
+同じ画像を複数箇所に置きたい場合は、画像素材を共有する別アイテムとして複製する。
+
+### 4-3. 保存方式
+
+| データ       | 保存先                  |
+| --------- | -------------------- |
+| プロジェクト    | IndexedDB            |
+| 画像Blob    | IndexedDB            |
+| 編集履歴      | メモリ（一時保存）            |
+| UI設定      | localStorage         |
+| バックアップ    | JSONファイル             |
+| PWAのアプリ本体 | Service Worker Cache |
+
+JSONバックアップは画像も含めて復元可能にする。通常の内部保存形式と異なり、エクスポート時には画像をBase64等で同梱する。
+
+共有URLは軽量なテキスト主体のTier表に限定し、画像付きプロジェクトはファイル共有を基本とする。画像を含むURLを無理に生成しない。
+
+## 5. 詳細な編集仕様
+
+### 5-1. ランク操作
+
+| 操作   | 挙動                    |
+| ---- | --------------------- |
+| 追加   | 指定位置に新規ランクを挿入         |
+| 削除   | 確認後、所属アイテムを未分類へ移動     |
+| 複製   | 名前・色・設定をコピー。アイテムは含めない |
+| 並べ替え | ドラッグまたは上下ボタン          |
+| ロック  | アイテムの移動・ランク変更を防止      |
+| 非表示  | 編集画面で折りたたみ。出力時の除外は別設定 |
+
+### 5-2. 画像管理
+
+画像登録時にはファイル形式、容量、画像寸法を検証する。対応形式はPNG、JPEG、WebP、GIF（初期版では静止画として扱う）。
+
+元画像を保持しながら、表示用サムネイルを生成する。大量の画像を登録した場合でも画面が重くならないよう、未分類トレイは仮想スクロールを利用する。
+
+画像が未登録のアイテムも作成可能にして、文字だけのTier表にも対応する。
+
+### 5-3. Undo / Redo
+
+ランクの移動、アイテムの配置、色変更、名前変更などの編集操作を履歴に保存する。
+
+ただし、画像Blob自体を履歴に複製しない。履歴には変更内容や状態の差分を保存し、メモリ消費を抑える。
+
+履歴は最大50〜100操作程度を初期設定とし、ページ再読み込み後の復元は必須としない。
+
+## 6. テーマシステム
+
+テーマはユーザーのランクやアイテムを消さずに、見た目だけを変更する。
+
+[Spa Color Palette Ideas (20 Picks + Hex)](https://images.openai.com/static-rsc-4/kHqrLkTKlo2j-sVyCJX5mU3EguvlHujl7eay_uaWnyY-2Xf7p8wCz2Yzk0-Un_x_xLK0-p6UUuXbY70sTKr5mqizle1WWiaGMu9c8Vty7phzjCXTCaxfl1R3cVNOeffbmF7KizJFE6ZmRUSR-OjbG6cFkUJPds5-nFe55GLBCgs?purpose=inline)
+
+Minimal — 白・グレー・余白中心
+
+[NeoTokyo Glitch Glassmorphism UI Starter Pack is now available - NeoTokyo Glitch Glassmorphism UI Starter Pack by Nexa Visuals](https://images.openai.com/static-rsc-4/12wZcSftv6-uQKb564X_irt7Gh663YvqohJ0vDX5AtdKM24IiHRfggHrHGklGiuQpGBl7Uqsy4_FN3MvOf5bsRb4RjD-hpftHpgux2Qk6GMTO5fsTj4r2GVhmV182vrleje5-0AJnwG53lvGr0_gNpk0A1vGxuiYJm4hiH0gsY0?purpose=inline)
+
+Cyber — ネオン・暗色・発光
+
+[Spring Break Activities at NVDPL!](https://images.openai.com/static-rsc-4/SBflqmwhjn8pAW3kpQ2KgcafbfnWyMtrL5OCSvCNbU8ZeQ5MiC8uzE5WLGGSHxDWIVjThxI6X6vuq-m5aEYow4Ow3jGI9n4ctfvBKLjOGDT2u8DLLfFs-v1H2NWcIhNZWsDJl9oy5WTmekKyLssva0DmPuH4oGwdYw5eSfyzNt8?purpose=inline)
+
+Pop — パステル・丸み・ステッカー
+
+[Exquisite Border Line Drawing Black Gold Floral Background | PSD Free Download - Pikbest](https://images.openai.com/static-rsc-4/DuZpE4ZyBj_RhkJDgO9PGB_u7PyZyuoq1RZ3i0Si4xPMeHVF6VhYJkgi6c03aBUMIYqG5CEnWu5QmpGoZKgRRWOq0cqCVPbtYheQ90PshjFffjxoAIJyuz43JqigtbD1v4z1cLhnZmsGKFwaSn_RrSLyN-yQNyGMR3MUcsV36t0?purpose=inline)
+
+Gothic — 黒・金・装飾枠
+
+[GUI KIT Pixelart Asset Pack by ELV Games](https://images.openai.com/static-rsc-4/Cio9Rkh8y1vg5OsMTuJZ33lAKbjxhzpIR16ila8xh63MHUxGRYttBBleXo0my_oy2V0kUyYetFKeu9Nd1oFL_NObhks-1Z_EvB7O6yVg0kbMSuKWi4BcIU0ZbcyQBaGCwoCu225slbxbbFbxteubpW-UhI3GbHE7Txf6aFIyFyY?purpose=inline)
+
+Pixel — ドット・レトロゲーム
+
+[友禅和紙 豪華 金扇と鶴 秋の草 花 紺地 青 菊判 大判 約63 ｘ93cm 千代紙 YUZEN dyeing  80888937 | 森田和紙オンラインショップ《倭紙の店》](https://images.openai.com/static-rsc-4/g0LkycOAICkNBazNQupkT3UbAdRcXh-i52AP-3G8p64DmTOTIG1amtIKASzJMvWS52GYTUDCFBkC7A_LYTR3Vq8z61HVB_cvKvtM_uAHJJnE8_SZv23g80PiLnmhMOFLPiLXxAzni2lCHEe-l-HzBXCrNoJ6i6N04ZIDxNx4ZJY?purpose=inline)
+
+Wa — 和紙・伝統色・和柄
+
+テーマ定義はJSON化し、後からテーマを追加するだけで選択肢が増える仕組みにする。
+
+また、デザイン変更の範囲を「全体」「ランクのみ」「画像カードのみ」から選択できるようにする。
+
+## 7. 画像出力仕様
+
+| 項目      | 設定                  |
+| ------- | ------------------- |
+| 形式      | PNG / JPEG / WebP   |
+| 倍率      | 1倍 / 2倍 / 3倍 / カスタム |
+| 背景      | 不透明 / 透明（PNG・WebP）  |
+| 範囲      | Tier表のみ / タイトル込み    |
+| 未分類     | 初期設定では出力しない         |
+| 文字      | Webフォント読み込み完了後に描画   |
+| 長いTier表 | 高さに応じて自動拡張          |
+
+エクスポートには編集用のボタン、ドラッグハンドル、選択枠を含めない。
+
+ブラウザのCanvasサイズ制限を超える場合は、倍率を下げる案内や分割出力を提供する。画像の縦横比を崩さずに出力することを必須条件とする。
+
+## 8. 技術構成
+
+| 技術                 | 用途          |
+| ------------------ | ----------- |
+| React + TypeScript | UI・型安全な実装   |
+| Vite               | 開発・静的ビルド    |
+| Zustand + Immer    | 編集状態管理      |
+| dnd-kit            | ドラッグ＆ドロップ   |
+| Dexie              | IndexedDB操作 |
+| Zod                | インポートデータ検証  |
+| html-to-image      | 画像書き出しの基盤   |
+| vite-plugin-pwa    | PWA・オフライン対応 |
+| Vitest             | 単体テスト       |
+| Playwright         | ブラウザ操作テスト   |
+
+ライブラリは実装開始時に互換性と保守状況を確認してバージョン固定する。
+
+### フォルダ構成
+
+```
+tier-atelier/
+├── public/
+│   ├── icons/
+│   └── manifest.webmanifest
+├── src/
+│   ├── app/
+│   ├── components/
+│   │   ├── editor/
+│   │   ├── tier/
+│   │   ├── items/
+│   │   ├── panels/
+│   │   └── common/
+│   ├── features/
+│   │   ├── projects/
+│   │   ├── assets/
+│   │   ├── drag-drop/
+│   │   ├── history/
+│   │   ├── export/
+│   │   └── themes/
+│   ├── data/
+│   │   ├── db.ts
+│   │   ├── schemas.ts
+│   │   └── migrations.ts
+│   ├── stores/
+│   ├── styles/
+│   ├── utils/
+│   └── main.tsx
+├── tests/
+├── package.json
+├── vite.config.ts
+└── README.md
+```
+
+## 9. 開発ロードマップ
+
+### 01
+
+編集エンジン
+
+最優先
+
+Tierの追加・削除・並べ替え、アイテム配置、基本UI
+
+### 02
+
+画像・保存機能
+
+必須
+
+画像一括登録、IndexedDB、自動保存、JSON復元
+
+### 03
+
+デザイン機能
+
+必須
+
+テーマ、色、文字、サイズ、背景、プロパティ編集
+
+### 04
+
+書き出し・共有
+
+必須
+
+PNG/JPEG/WebP出力、プロジェクトファイル共有
+
+### 05
+
+操作性の仕上げ
+
+必須
+
+スマホ操作、Undo/Redo、検索、キーボード対応
+
+### 06
+
+公開・品質検証
+
+公開前
+
+PWA、オフライン、テスト、GitHub、さくらサーバー公開
+
+各フェーズで動く状態を維持し、前段階のデータを壊さないようにする。
+
+## 10. Codexへの実装指示
+
+この企画書をCodexに渡すときは、最初から全機能を一度に実装させるのではなく、フェーズごとに実装・テスト・コミットする方針にする。
+
+# TIER ATELIER — Codex実装指示書
+
+あなたはReact・TypeScript・PWA開発に精通したフロントエンドエンジニアです。
+
+「TIER ATELIER」という、自由度の高いTier List作成Webアプリケーションを開発してください。
+
+## 開発目標
+
+PC・スマートフォン両対応で、画像や文字を自由にランク分けし、見た目をカスタマイズして画像出力できるツールを制作します。
+
+- 静的サイトとして公開可能
+- ログイン不要
+- ユーザーデータはローカル保存
+- PWA対応
+- 日本語UIを標準とする
+- 将来的な英語対応を考慮した文言管理
+- デザイン性と操作性を両立
+
+## 技術スタック
+
+React、TypeScript、Vite、Zustand、Immer、dnd-kit、Dexie、Zod、vite-plugin-pwa、Vitest、Playwrightを基本とします。
+
+使用ライブラリの互換性を確認し、必要に応じて代替技術を提案してください。
+
+## 必須機能
+
+1. プロジェクト作成・一覧・複製・削除
+2. Tierの追加・削除・改名・並べ替え・色変更
+3. 画像の複数登録と未分類アイテム管理
+4. ドラッグ＆ドロップによる配置
+5. タップ操作とキーボードによる代替移動
+6. アイテム名・説明・タグの編集
+7. 背景・文字・画像サイズ・余白などのデザイン編集
+8. デザインテンプレート
+9. IndexedDBによる自動保存
+10. JSONバックアップと復元
+11. PNG・JPEG・WebP画像出力
+12. Undo・Redo
+13. スマートフォン対応
+14. PWA・オフライン対応
+
+## データ設計上の注意
+
+- UUIDなどの安定したIDを使用する。
+- Tierの並び順とアイテムの並び順を明示的に管理する。
+- 同一アイテムが複数のTierに存在しないようにする。
+- 画像はBlobとして保存し、プロジェクトデータとは分離する。
+- JSONバックアップには画像を含める。
+- schemaVersionを付け、将来のマイグレーションに対応する。
+- インポート時はデータを検証し、既存プロジェクトを破壊しない。
+- 外部への画像アップロードは行わない。
+
+## UI設計
+
+PC版は左サイドバー・中央キャンバス・右プロパティパネルの3カラム構成。
+
+スマートフォン版はTier表を中心に表示し、下部ツールバーと設定ドロワーで操作する。
+
+タッチ操作、キーボード操作、スクリーンリーダー、フォーカス表示に対応する。
+
+## 実装手順
+
+まずプロジェクトを初期化し、基本UIとTier編集機能を実装してください。
+
+各フェーズ完了時に以下を実施します。
+
+- TypeScript型チェック
+- ビルド確認
+- 単体テスト
+- 必要なブラウザ操作テスト
+- 変更点と残課題の報告
+
+実装が大きくなる場合は、独立した小さなタスクに分割してください。
+
+## 完了条件
+
+- 画像20枚以上を登録してTier表を編集できる。
+- PCとスマートフォンの両方で操作できる。
+- 再読み込みしても保存データが残る。
+- JSONから画像を含めて復元できる。
+- 画像出力に編集UIが混入しない。
+- オフラインで既存プロジェクトを編集できる。
+- コンソールエラーや重大なアクセシビリティ上の問題がない。
+
+最初にディレクトリ構成と開発計画を提示し、その後フェーズ1の実装に着手してください。
+
+## 11. 実装時の品質チェックリスト
+
+完成判定
+
+0 / 12 項目
