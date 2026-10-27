@@ -41,7 +41,7 @@ export function EditingTools() {
   const selected = useEditor((state) => state.selectedIds), mode = useEditor((state) => state.selectionMode);
   const zoom = useEditor((state) => state.zoom), grid = useEditor((state) => state.grid), dragging = useEditor((state) => !!state.draggingId);
   const [destination, setDestination] = useState('unranked');
-  const [open, setOpen] = useState(() => !window.matchMedia('(max-width: 720px)').matches);
+  const [open, setOpen] = useState(false);
   const visible = useMemo(() => matchingIds(project, query, tags), [project, query, tags]);
   const availableTags = useMemo(() => [...new Set(Object.values(project.items).flatMap((item) => item.tags))].sort((a, b) => a.localeCompare(b, 'ja')), [project.items]);
   const hidden = selected.filter((id) => !visible.includes(id)).length;

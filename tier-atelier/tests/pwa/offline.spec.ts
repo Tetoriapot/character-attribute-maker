@@ -51,7 +51,7 @@ for (const path of ['/', '/nested/tier-atelier/']) test(`offline saved images, l
   await images(page, 1, 'image/jpeg'); await expect(page.locator('.item-card')).toHaveCount(25);
   await page.getByRole('button', { name: '元に戻す', exact: true }).click(); await expect(page.locator('.item-card')).toHaveCount(24);
   await page.getByRole('button', { name: 'やり直す', exact: true }).click(); await expect(page.locator('.item-card')).toHaveCount(25);
-  if (isMobile) await page.locator('.editing-tools > summary').click();
+  await page.locator('.editing-tools > summary').click();
   await page.locator('.editing-tools').getByLabel('画像名を一括で非表示').check();
   await expect(page.locator('.item-name:not(.visually-hidden)')).toHaveCount(0);
   await page.locator(isMobile ? '.mobile-toolbar' : '.left-panel').getByRole('button', { name: 'デザイン', exact: true }).click();
