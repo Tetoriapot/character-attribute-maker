@@ -1,6 +1,6 @@
 import { produce } from 'immer';
 import { z } from 'zod';
-import type { ID, Item, Project, Tier } from '../../data/types';
+import type { Asset, ID, Item, Project, Tier } from '../../data/types';
 import { createTier } from '../../data/defaults';
 import { t } from '../../app/messages';
 
@@ -12,8 +12,9 @@ export type EditorCommand =
   | { type: 'tier.delete' | 'tier.duplicate'; id: ID }
   | { type: 'tier.move'; id: ID; index: number }
   | { type: 'item.add'; name: string; description: string; tags: string[] }
+  | { type: 'images.add'; images: { asset: Asset; item: Item }[] }
   | { type: 'item.update'; id: ID; name: string; description: string; tags: string[] }
-  | { type: 'item.delete'; id: ID }
+  | { type: 'item.delete' | 'item.duplicate'; id: ID }
   | { type: 'item.move'; id: ID; tierId: ID | null; index?: number };
 
 export class EditorError extends Error {}
@@ -110,12 +111,30 @@ export function editProject(project: Project, command: EditorCommand): Project {
         draft.unrankedItemIds.push(item.id);
         break;
       }
+      case 'images.add': {
+        for (const { asset, item } of command.images) {
+          if (draft.assets[asset.id] || draft.items[item.id] || item.assetId !== asset.id) throw new EditorError(t.errors.unexpected);
+          draft.assets[asset.id] = asset;
+          draft.items[item.id] = item;
+          draft.unrankedItemIds.push(item.id);
+        }
+        break;
+      }
+      case 'item.duplicate': {
+        const original = getItem(draft, command.id);
+        const item = { ...original, id: crypto.randomUUID(), name: `${original.name.slice(0, 76)}${t.copySuffix}`, createdAt: new Date().toISOString() };
+        const ids = itemIdsAt(draft, itemLocation(draft, command.id));
+        draft.items[item.id] = item;
+        ids.splice(ids.indexOf(command.id) + 1, 0, item.id);
+        break;
+      }
       case 'item.update': Object.assign(getItem(draft, command.id), details(command)); break;
       case 'item.delete': {
-        getItem(draft, command.id);
+        const assetId = getItem(draft, command.id).assetId;
         const ids = itemIdsAt(draft, itemLocation(draft, command.id));
         ids.splice(ids.indexOf(command.id), 1);
         delete draft.items[command.id];
+        if (assetId && !Object.values(draft.items).some((item) => item.assetId === assetId)) delete draft.assets[assetId];
         break;
       }
       case 'item.move': {

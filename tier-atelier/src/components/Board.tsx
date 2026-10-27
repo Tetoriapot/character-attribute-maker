@@ -4,14 +4,16 @@ import type { Item, Project, Selection, Tier } from '../data/types';
 import { useEditor } from '../stores/editorStore';
 import { Icon } from './Icon';
 import { t } from '../app/messages';
+import { storageText as s } from '../app/storageMessages';
 
 export function ItemCard({ item, selected, locked, onSelect }: { item: Item; selected: boolean; locked?: boolean; onSelect: () => void }) {
+  const thumbnail = useEditor((state) => item.assetId ? state.thumbnails[item.assetId] : undefined);
   const draggable = useDraggable({ id: item.id, type: 'item', disabled: locked });
   const drop = useDroppable({ id: `item:${item.id}`, accept: 'item', disabled: locked || draggable.isDragSource, collisionPriority: 2 });
   return <div ref={(node) => { draggable.ref(node); drop.ref(node); }}
     data-dragging={draggable.isDragging || draggable.isDropping} className={`item-card ${selected ? 'selected' : ''} ${drop.isDropTarget ? 'drop-target' : ''}`}>
     <button type="button" className="item-select" onClick={onSelect} aria-label={t.editItem(item.name)} aria-pressed={selected} title={item.name}>
-      <span className="item-initial" aria-hidden="true">{Array.from(item.name)[0]}</span><span className="item-name">{item.name}</span>
+      {thumbnail ? <img className="item-thumbnail" src={thumbnail} alt="" loading="lazy" draggable={false} /> : <span className="item-initial" aria-hidden="true">{Array.from(item.name)[0]}</span>}<span className="item-name">{item.name}</span>
     </button>
     <button ref={draggable.handleRef} type="button" className="item-grip" disabled={locked} aria-label={t.dragItem(item.name)} title={t.dragItem(item.name)}><Icon name="grip" size={14} /></button>
   </div>;
@@ -50,7 +52,7 @@ function TierRow({ tier, index, project, selection, onSelect }: { tier: Tier; in
   </section>;
 }
 
-export function Board({ onSelect, onAddText, onAddTier }: { onSelect: (selection: Selection) => void; onAddText: () => void; onAddTier: () => void }) {
+export function Board({ onSelect, onAddText, onAddTier, onAddImages }: { onSelect: (selection: Selection) => void; onAddText: () => void; onAddTier: () => void; onAddImages: () => void }) {
   const project = useEditor((state) => state.project);
   const selection = useEditor((state) => state.selection);
   return <>
@@ -64,7 +66,7 @@ export function Board({ onSelect, onAddText, onAddTier }: { onSelect: (selection
     </div>
     <button className="add-tier-row" onClick={onAddTier}><Icon name="plus" size={16} />{t.addTier}</button>
     <section className="unranked" aria-label={t.unrankedItems}>
-      <div className="tray-heading"><h2>{t.unrankedItems}<span className="count">{project.unrankedItemIds.length}</span></h2><button className="button secondary small" onClick={onAddText}><Icon name="plus" size={16} />{t.addText}</button></div>
+      <div className="tray-heading"><h2>{t.unrankedItems}<span className="count">{project.unrankedItemIds.length}</span></h2><div className="tray-actions"><button className="button primary small" onClick={onAddImages}><Icon name="plus" size={16} />{s.images}</button><button className="button secondary small" onClick={onAddText}><Icon name="text" size={16} />{t.addText}</button></div></div>
       <div className={project.unrankedItemIds.length ? 'tray-content' : 'tray-content empty'}>
         <ItemZone project={project} ids={project.unrankedItemIds} selection={selection} onSelect={onSelect} />
         {project.unrankedItemIds.length === 0 && <div className="empty-tray"><span className="empty-icon"><Icon name="text" size={24} /></span><div><h3>{t.emptyTray}</h3><p>{t.emptyTrayHint}</p></div></div>}

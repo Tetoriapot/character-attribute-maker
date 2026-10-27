@@ -27,10 +27,11 @@ async function addItem(page: Page, mobile: boolean, name: string) {
   await expect(dialog).not.toBeVisible();
 }
 
-test('initial editor is accessible and shows the phase-specific storage limitation', async ({ page, isMobile }, testInfo) => {
+test('initial editor is accessible and shows autosave status', async ({ page, isMobile }, testInfo) => {
   await expect(page.getByRole('heading', { name: '新しいTier表', exact: true })).toBeVisible();
   await expect(page.locator('.tier-row')).toHaveCount(5);
-  await expect(page.locator('.save-notice')).toContainText('再読み込みや終了で編集内容が失われます');
+  await expect(page.locator('.save-notice')).toContainText('IndexedDBに自動保存');
+  await expect(page.getByTestId('save-status')).toHaveText('保存済み');
   if (isMobile) await expect(page.locator('.mobile-toolbar')).toBeVisible();
   else await expect(page.getByRole('complementary', { name: 'プロパティ' })).toBeVisible();
   const accessibility = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
@@ -162,8 +163,10 @@ test('item metadata, ordering and confirmed deletion work', async ({ page, isMob
   await expect(page.getByTestId('unranked-items')).toContainText('一');
 });
 
-test('editing warns before closing and cancellation retains the data', async ({ page, isMobile }) => {
+test('unapplied form input warns before closing and cancellation retains the data', async ({ page, isMobile }) => {
   await addItem(page, isMobile, '再読込前の内容');
+  await page.getByLabel('アイテム「再読込前の内容」を編集').click();
+  await pane(page, isMobile).getByLabel('説明', { exact: true }).fill('未適用の変更');
   const dismissed = page.waitForEvent('dialog').then(async (dialog) => { expect(dialog.type()).toBe('beforeunload'); await dialog.dismiss(); });
   await page.close({ runBeforeUnload: true });
   await dismissed;

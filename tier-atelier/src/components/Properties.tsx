@@ -6,6 +6,8 @@ import { t } from '../app/messages';
 import { Icon } from './Icon';
 import { Field } from './Fields';
 import { Dialog } from './Dialog';
+import { useDraft } from '../features/editor/useDraft';
+import { storageText as s } from '../app/storageMessages';
 
 function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return <Field label={label}>{(id) => <div className="color-value">
@@ -39,6 +41,7 @@ function TierProperties({ tier, project }: { tier: Tier; project: Project }) {
   const [foreground, setForeground] = useState(tier.foreground);
   const [deleting, setDeleting] = useState(false);
   const index = project.tiers.findIndex((entry) => entry.id === tier.id);
+  useDraft(name !== tier.name || background !== tier.background || foreground !== tier.foreground);
   useEffect(() => {
     setName(tier.name);
     setBackground(tier.background);
@@ -86,6 +89,7 @@ export function ItemForm({ item, onDone }: { item?: Item; onDone?: () => void })
     setDescription(item?.description ?? '');
     setTags(item?.tags.join(', ') ?? '');
   }, [item?.name, item?.description, item?.tags]);
+  useDraft(name !== (item?.name ?? '') || description !== (item?.description ?? '') || tags !== (item?.tags.join(', ') ?? ''));
   function submit(event: FormEvent) {
     event.preventDefault();
     const values = { name, description, tags: tags.split(/[,、]/).map((tag) => tag.trim()).filter(Boolean) };
@@ -125,6 +129,7 @@ function ItemProperties({ item, project }: { item: Item; project: Project }) {
         <button className="button secondary" disabled={index >= ids.length - 1} onClick={() => dispatch({ type: 'item.move', id: item.id, tierId, index: index + 1 }, t.moved)}><Icon name="down" />{t.after}</button>
       </div></div>
       <div className="property-section"><button className="button text-button destructive" onClick={() => setDeleting(true)}><Icon name="trash" />{t.deleteItem}</button></div>
+      <button className="button text-button" onClick={() => dispatch({ type: 'item.duplicate', id: item.id }, s.itemDuplicated)}><Icon name="copy" />{s.duplicateItem}</button>
     </fieldset>
     {deleting && <ConfirmDelete kind="item" id={item.id} name={item.name} onClose={() => setDeleting(false)} />}
   </>;
@@ -135,6 +140,7 @@ function ProjectProperties({ project }: { project: Project }) {
   const [description, setDescription] = useState(project.description);
   const dispatch = useEditor((state) => state.dispatch);
   useEffect(() => { setTitle(project.title); setDescription(project.description); }, [project.title, project.description]);
+  useDraft(title !== project.title || description !== project.description);
   return <><div className="property-kind"><span>{t.projectSettings}</span><Icon name="settings" /></div>
     <form onSubmit={(event) => { event.preventDefault(); dispatch({ type: 'project.update', title, description }); }}>
       <Field label={t.projectTitle}>{(id) => <input id={id} value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={120} />}</Field>
