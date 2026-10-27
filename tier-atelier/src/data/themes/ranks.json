@@ -1,0 +1,5 @@
+[
+  { "id": "standard", "name": "標準5色", "colors": ["#edaaa8", "#efc198", "#ecda98", "#bed3af", "#a9cbd9"], "foreground": "#252c29" },
+  { "id": "ocean", "name": "青の濃淡", "colors": ["#a4c4df", "#b6cfe3", "#c8dae8", "#dbe5ef", "#eaf0f5"], "foreground": "#233b50" },
+  { "id": "mono", "name": "モノクロ", "colors": ["#b9bfbc", "#cbd0cd", "#d9ddda", "#e6e9e7", "#f2f3f2"], "foreground": "#252c29" }
+]

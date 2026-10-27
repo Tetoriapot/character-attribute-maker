@@ -15,6 +15,7 @@ import { addImages, exportProject, flushSave, initializeStorage } from '../featu
 import { confirmDrafts } from '../features/editor/useDraft';
 import { ProjectManager } from '../components/ProjectManager';
 import { ImageImport } from '../components/ImageImport';
+import { d } from './designMessages';
 
 const sensors = [KeyboardSensor, PointerSensor.configure({
   activationConstraints: (event) => event.pointerType === 'touch'
@@ -124,6 +125,7 @@ export default function App() {
         <button onClick={() => setDialog('tiers')}><Icon name="layers" /><span>{t.tierList}</span></button>
         <button className="mobile-add" onClick={addText}><Icon name="plus" /><span>{t.addText}</span></button>
         <button onClick={() => setDialog('properties')}><Icon name="settings" /><span>{t.settings}</span></button>
+        <button onClick={() => choose({ kind: 'design' })}><Icon name="panel" /><span>{d.title}</span></button>
       </nav>
       {dialog === 'add' && <Dialog title={t.addTextTitle} onClose={closeDialog}><ItemForm onDone={closeDialog} /><Feedback /></Dialog>}
       {dialog === 'help' && <Dialog title={t.helpTitle} onClose={closeDialog}><div className="help-content"><h3>{t.tiers}</h3><p>{t.helpTier}</p><p>{t.helpDelete}</p><h3>{t.items}</h3><p>{t.helpItem}</p><h3>{t.settings}</h3><p>{t.helpKeyboard}</p><p>{t.helpTouch}</p><div className="notice-inline">{t.storageNotice}</div></div></Dialog>}

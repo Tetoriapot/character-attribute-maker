@@ -1,13 +1,22 @@
 import { produce } from 'immer';
 import { z } from 'zod';
-import type { Asset, ID, Item, Project, Tier } from '../../data/types';
+import type { Asset, Crop, ID, Item, Project, Tier, TierStyle } from '../../data/types';
 import { createTier } from '../../data/defaults';
 import { t } from '../../app/messages';
+import { d } from '../../app/designMessages';
+import { cropSchema, editedStyleSchema } from '../../data/schemas';
+import { cardKeys, rankKeys, type ThemeScope } from '../design/settings';
+import { themes, rankPresets } from '../design/templates';
 
 export type EditorCommand =
   | { type: 'project.update'; title: string; description: string }
   | { type: 'tier.add'; afterId?: ID }
-  | { type: 'tier.update'; id: ID; name: string; background: string; foreground: string }
+  | { type: 'tier.update'; id: ID; name: string; background: string; foreground: string; minHeight?: number; labelWidth?: number | null }
+  | { type: 'design.update'; style: Partial<TierStyle> }
+  | { type: 'design.theme'; id: string; scope: ThemeScope }
+  | { type: 'design.ranks'; id: string }
+  | { type: 'design.background'; asset: Asset | null }
+  | { type: 'item.crop'; id: ID; crop: Crop | null }
   | { type: 'tier.lock'; id: ID; locked: boolean }
   | { type: 'tier.delete' | 'tier.duplicate'; id: ID }
   | { type: 'tier.move'; id: ID; index: number }
@@ -58,11 +67,56 @@ function clampIndex(index: number, length: number): number {
   if (!Number.isFinite(index)) throw new EditorError(t.errors.invalidMove);
   return Math.max(0, Math.min(Math.trunc(index), length));
 }
+function releaseAsset(project: Project, id: ID | null | undefined) {
+  if (id && project.style.backgroundAssetId !== id && !Object.values(project.items).some((item) => item.assetId === id)) delete project.assets[id];
+}
 
 // All placements change in one Immer transaction; a canceled or rejected command keeps the original state.
 export function editProject(project: Project, command: EditorCommand): Project {
   const next = produce(project, (draft) => {
     switch (command.type) {
+      case 'design.update': {
+        const style = validate(editedStyleSchema, { ...draft.style, ...command.style }, d.invalid);
+        if (style.backgroundAssetId && !draft.assets[style.backgroundAssetId]) throw new EditorError(d.invalid);
+        // Background references are managed by design.background so old blobs can be reclaimed safely.
+        if ((style.backgroundAssetId ?? null) !== (draft.style.backgroundAssetId ?? null)) throw new EditorError(d.invalid);
+        draft.style = style;
+        break;
+      }
+      case 'design.theme':
+      case 'design.ranks': {
+        const preset = (command.type === 'design.theme' ? themes : rankPresets).find((entry) => entry.id === command.id);
+        if (!preset) throw new EditorError(d.invalid);
+        if (command.type === 'design.ranks' || command.scope !== 'cards') {
+          draft.tiers.forEach((tier, index) => {
+            if (!tier.locked) { tier.background = preset.colors[index % preset.colors.length]!; tier.foreground = preset.foreground; }
+          });
+        }
+        if (command.type === 'design.theme') {
+          const theme = themes.find((entry) => entry.id === command.id)!;
+          const keys = command.scope === 'ranks' ? rankKeys : command.scope === 'cards' ? cardKeys : (Object.keys(theme.style) as (keyof TierStyle)[]).filter((key) => key !== 'backgroundAssetId');
+          const patch = Object.fromEntries(keys.map((key) => [key, theme.style[key]]));
+          Object.assign(draft.style, patch);
+        }
+        break;
+      }
+      case 'design.background': {
+        const previous = draft.style.backgroundAssetId;
+        if (command.asset) {
+          if (draft.assets[command.asset.id]) throw new EditorError(d.invalid);
+          draft.assets[command.asset.id] = command.asset;
+        }
+        draft.style.backgroundAssetId = command.asset?.id ?? null;
+        draft.style.backgroundMode = command.asset ? 'image' : 'solid';
+        releaseAsset(draft, previous);
+        break;
+      }
+      case 'item.crop': {
+        const item = getItem(draft, command.id);
+        if (!item.assetId) throw new EditorError(d.cropInvalid);
+        item.crop = command.crop === null ? null : { ...item.crop, ...validate(cropSchema, command.crop, d.cropInvalid) };
+        break;
+      }
       case 'project.update':
         draft.title = validate(titleSchema, command.title, t.errors.title);
         draft.description = validate(z.string().max(1000), command.description, t.errors.description);
@@ -78,6 +132,9 @@ export function editProject(project: Project, command: EditorCommand): Project {
         tier.name = validate(nameSchema, command.name, t.errors.name);
         tier.background = validate(colorSchema, command.background, t.errors.color);
         tier.foreground = validate(colorSchema, command.foreground, t.errors.color);
+        if (command.minHeight !== undefined) tier.minHeight = validate(z.number().min(64).max(400), command.minHeight, d.invalid);
+        if (command.labelWidth === null) delete tier.labelWidth;
+        else if (command.labelWidth !== undefined) tier.labelWidth = validate(z.number().min(48).max(240), command.labelWidth, d.invalid);
         break;
       }
       case 'tier.lock': getTier(draft, command.id).locked = command.locked; break;
@@ -134,7 +191,7 @@ export function editProject(project: Project, command: EditorCommand): Project {
         const ids = itemIdsAt(draft, itemLocation(draft, command.id));
         ids.splice(ids.indexOf(command.id), 1);
         delete draft.items[command.id];
-        if (assetId && !Object.values(draft.items).some((item) => item.assetId === assetId)) delete draft.assets[assetId];
+        releaseAsset(draft, assetId);
         break;
       }
       case 'item.move': {

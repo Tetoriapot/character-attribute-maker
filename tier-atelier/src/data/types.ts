@@ -7,6 +7,7 @@ export interface Tier {
   foreground: string;
   itemIds: ID[];
   minHeight?: number;
+  labelWidth?: number;
   locked?: boolean;
 }
 
@@ -17,7 +18,10 @@ export interface Item {
   description: string;
   tags: string[];
   createdAt: string;
+  crop?: Crop | null;
 }
+
+export interface Crop { x: number; y: number; width: number; height: number }
 
 export interface Asset {
   id: ID;
@@ -39,6 +43,24 @@ export interface TierStyle {
   showItemNames: boolean;
   showTitle: boolean;
   borderColor: string;
+  backgroundMode?: 'solid' | 'gradient' | 'pattern' | 'image';
+  backgroundAssetId?: ID | null;
+  backgroundSecondary?: string;
+  gradientAngle?: number;
+  pattern?: 'dots' | 'grid' | 'stripes';
+  textColor?: string;
+  fontSize?: number;
+  labelFontSize?: number;
+  padding?: number;
+  rowGap?: number;
+  borderWidth?: number;
+  borderStyle?: 'solid' | 'dashed' | 'double';
+  cardBackground?: string;
+  cardTextColor?: string;
+  shadow?: 'none' | 'soft' | 'hard';
+  titleSize?: number;
+  titleAlign?: 'left' | 'center' | 'right';
+  titleDecoration?: 'none' | 'line' | 'band';
 }
 
 export interface Project {
@@ -55,4 +77,4 @@ export interface Project {
   style: TierStyle;
 }
 
-export type Selection = { kind: 'tier' | 'item'; id: ID } | { kind: 'project' };
+export type Selection = { kind: 'tier' | 'item'; id: ID } | { kind: 'project' | 'design' };

@@ -6,6 +6,7 @@ import { editProject, EditorError } from '../editor/commands';
 import { MAX_PROJECT_BYTES, prepareImage, totalBytes, validateBatch, type PreparedImage } from '../assets/images';
 import { createBackup, downloadBackup, readBackup } from '../backup/backup';
 import { storageText as s } from '../../app/storageMessages';
+import { d } from '../../app/designMessages';
 
 let revision = 0;
 let pending = new Map<string, StoredBlob>();
@@ -184,6 +185,19 @@ export function exportProject() {
     const snapshot = get().project;
     downloadBackup(await createBackup(snapshot, get().records), snapshot.title);
     set({ announcement: s.backupDone });
+  }, false);
+}
+export function addBackground(file: File) {
+  return exclusive(async () => {
+    set({ progress: s.importing });
+    if (totalBytes(get().records.values()) + file.size > MAX_PROJECT_BYTES) throw new Error(s.projectLimit);
+    const image = await prepareImage(file, file.name);
+    const project = editProject(get().project, { type: 'design.background', asset: image.asset });
+    const records = new Map(get().records), thumbnails = { ...get().thumbnails };
+    records.set(image.record.id, image.record); pending.set(image.record.id, image.record);
+    thumbnails[image.asset.id] = URL.createObjectURL(image.record.thumbnail);
+    set({ project, records, thumbnails, dirty: true, announcement: d.backgroundAdded });
+    await flushSave().catch(() => undefined);
   }, false);
 }
 export function importProject(file: File) {

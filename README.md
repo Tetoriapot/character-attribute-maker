@@ -74,4 +74,4 @@
 
 ## TIER ATELIER
 
-Tier表を作成する新しいReactアプリを[`tier-atelier/`](tier-atelier/)で開発しています。フェーズ1ではTier編集と文字アイテムの配置に対応しています。保存・画像登録・画像出力は後続フェーズで追加します。起動方法と開発計画は[`tier-atelier/README.md`](tier-atelier/README.md)を参照してください。
+Tier表を作成するReactアプリを[`tier-atelier/`](tier-atelier/)で開発しています。フェーズ3まで実装し、Tier編集、画像登録、プロジェクト管理、自動保存、画像込みのJSON復元、デザイン編集とテンプレートに対応しています。画像出力・Undo／Redo・PWAは後続フェーズで追加します。起動方法と開発計画は[`tier-atelier/README.md`](tier-atelier/README.md)を参照してください。

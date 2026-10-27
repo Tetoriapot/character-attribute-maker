@@ -8,6 +8,9 @@ import { Field } from './Fields';
 import { Dialog } from './Dialog';
 import { useDraft } from '../features/editor/useDraft';
 import { storageText as s } from '../app/storageMessages';
+import { d } from '../app/designMessages';
+import { DesignPanel } from './DesignPanel';
+import { CropEditor } from './CropEditor';
 
 function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return <Field label={label}>{(id) => <div className="color-value">
@@ -39,17 +42,20 @@ function TierProperties({ tier, project }: { tier: Tier; project: Project }) {
   const [name, setName] = useState(tier.name);
   const [background, setBackground] = useState(tier.background);
   const [foreground, setForeground] = useState(tier.foreground);
+  const [minHeight, setMinHeight] = useState(tier.minHeight ?? 104);
+  const [labelWidth, setLabelWidth] = useState(tier.labelWidth?.toString() ?? '');
   const [deleting, setDeleting] = useState(false);
   const index = project.tiers.findIndex((entry) => entry.id === tier.id);
-  useDraft(name !== tier.name || background !== tier.background || foreground !== tier.foreground);
+  useDraft(name !== tier.name || background !== tier.background || foreground !== tier.foreground || minHeight !== (tier.minHeight ?? 104) || labelWidth !== (tier.labelWidth?.toString() ?? ''));
   useEffect(() => {
     setName(tier.name);
     setBackground(tier.background);
     setForeground(tier.foreground);
-  }, [tier.name, tier.background, tier.foreground]);
+    setMinHeight(tier.minHeight ?? 104); setLabelWidth(tier.labelWidth?.toString() ?? '');
+  }, [tier.name, tier.background, tier.foreground, tier.minHeight, tier.labelWidth]);
   function submit(event: FormEvent) {
     event.preventDefault();
-    dispatch({ type: 'tier.update', id: tier.id, name, background, foreground });
+    dispatch({ type: 'tier.update', id: tier.id, name, background, foreground, minHeight, labelWidth: labelWidth ? Number(labelWidth) : null });
   }
   return <>
     <div className="property-kind"><span>{t.tierSettings}</span><span className="count">{t.itemCount(tier.itemIds.length)}</span></div>
@@ -62,6 +68,8 @@ function TierProperties({ tier, project }: { tier: Tier; project: Project }) {
           <ColorField label={t.foreground} value={foreground} onChange={setForeground} />
         </div>
         <div className="label-preview" aria-label={t.preview} style={{ backgroundColor: background, color: foreground }}><span>{name || t.label}</span></div>
+        <Field label={d.minHeight} hint="64〜400">{(id) => <input id={id} type="number" required min={64} max={400} value={Number.isFinite(minHeight) ? minHeight : ''} onChange={(e) => setMinHeight(e.target.valueAsNumber)} />}</Field>
+        <Field label={d.tierWidth} hint={d.inherit}>{(id) => <input id={id} type="number" min={48} max={240} value={labelWidth} onChange={(e) => setLabelWidth(e.target.value)} />}</Field>
         <button className="button primary full" type="submit"><Icon name="check" />{t.apply}</button>
       </fieldset>
     </form>
@@ -117,6 +125,7 @@ function ItemProperties({ item, project }: { item: Item; project: Project }) {
     <div className="property-kind"><span>{t.itemSettings}</span><Icon name="text" /></div>
     {locked && <p className="notice-inline">{t.errors.locked}</p>}
     <fieldset disabled={locked}><ItemForm item={item} />
+      {item.assetId && <CropEditor item={item} />}
       <div className="property-section">
         <Field label={t.destination}>{(id) => <select id={id} value={destination} onChange={(e) => setDestination(e.target.value)}>
           <option value="unranked">{t.unranked}</option>
@@ -156,7 +165,7 @@ export function Properties() {
   const tier = selection.kind === 'tier' ? project.tiers.find((entry) => entry.id === selection.id) : undefined;
   const item = selection.kind === 'item' ? project.items[selection.id] : undefined;
   return <div className="properties-content">
-    {tier ? <TierProperties key={tier.id} tier={tier} project={project} />
+    {selection.kind === 'design' ? <DesignPanel key={project.id} /> : tier ? <TierProperties key={tier.id} tier={tier} project={project} />
       : item ? <ItemProperties key={item.id} item={item} project={project} />
         : <ProjectProperties key={project.id} project={project} />}
     <Feedback />

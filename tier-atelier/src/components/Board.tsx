@@ -1,19 +1,23 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/react';
 import type { Item, Project, Selection, Tier } from '../data/types';
 import { useEditor } from '../stores/editorStore';
 import { Icon } from './Icon';
 import { t } from '../app/messages';
 import { storageText as s } from '../app/storageMessages';
+import { AssetImage } from './AssetImage';
+import { appearance } from '../features/design/appearance';
+import { resolveStyle } from '../features/design/settings';
+import { useAssetUrl } from '../features/assets/useAssetUrl';
 
 export function ItemCard({ item, selected, locked, onSelect }: { item: Item; selected: boolean; locked?: boolean; onSelect: () => void }) {
-  const thumbnail = useEditor((state) => item.assetId ? state.thumbnails[item.assetId] : undefined);
+  const style = useEditor((state) => state.project.style);
   const draggable = useDraggable({ id: item.id, type: 'item', disabled: locked });
   const drop = useDroppable({ id: `item:${item.id}`, accept: 'item', disabled: locked || draggable.isDragSource, collisionPriority: 2 });
   return <div ref={(node) => { draggable.ref(node); drop.ref(node); }}
     data-dragging={draggable.isDragging || draggable.isDropping} className={`item-card ${selected ? 'selected' : ''} ${drop.isDropTarget ? 'drop-target' : ''}`}>
     <button type="button" className="item-select" onClick={onSelect} aria-label={t.editItem(item.name)} aria-pressed={selected} title={item.name}>
-      {thumbnail ? <img className="item-thumbnail" src={thumbnail} alt="" loading="lazy" draggable={false} /> : <span className="item-initial" aria-hidden="true">{Array.from(item.name)[0]}</span>}<span className="item-name">{item.name}</span>
+      {item.assetId ? <AssetImage assetId={item.assetId} crop={item.crop} fit={style.imageFit} /> : <span className="item-initial" aria-hidden="true">{Array.from(item.name)[0]}</span>}<span className={`item-name ${!style.showItemNames ? 'visually-hidden' : ''}`}>{item.name}</span>
     </button>
     <button ref={draggable.handleRef} type="button" className="item-grip" disabled={locked} aria-label={t.dragItem(item.name)} title={t.dragItem(item.name)}><Icon name="grip" size={14} /></button>
   </div>;
@@ -36,7 +40,7 @@ function TierRow({ tier, index, project, selection, onSelect }: { tier: Tier; in
   const draggable = useDraggable({ id: tier.id, type: 'tier', disabled: tier.locked });
   const drop = useDroppable({ id: `tier:${tier.id}`, accept: 'tier', disabled: draggable.isDragSource });
   const selected = selection.kind === 'tier' && selection.id === tier.id;
-  return <section aria-label={t.tierRegion(tier.name)} ref={(node) => { draggable.ref(node); drop.ref(node); }}
+  return <section aria-label={t.tierRegion(tier.name)} style={{ '--tier-height': `${Math.min(400, tier.minHeight ?? 104)}px`, ...(tier.labelWidth ? { '--tier-label': `${tier.labelWidth}px` } : {}) } as CSSProperties} ref={(node) => { draggable.ref(node); drop.ref(node); }}
     data-dragging={draggable.isDragging || draggable.isDropping} className={`tier-row ${selected ? 'selected' : ''} ${drop.isDropTarget ? 'drop-target' : ''} ${collapsed ? 'collapsed' : ''}`}>
     <div className="tier-label" style={{ backgroundColor: tier.background, color: tier.foreground }}>
       <button ref={draggable.handleRef} className="tier-grip" disabled={tier.locked} aria-label={t.dragTier(tier.name)} title={t.dragTier(tier.name)}><Icon name="grip" size={16} /></button>
@@ -55,8 +59,10 @@ function TierRow({ tier, index, project, selection, onSelect }: { tier: Tier; in
 export function Board({ onSelect, onAddText, onAddTier, onAddImages }: { onSelect: (selection: Selection) => void; onAddText: () => void; onAddTier: () => void; onAddImages: () => void }) {
   const project = useEditor((state) => state.project);
   const selection = useEditor((state) => state.selection);
-  return <>
-    <div className="canvas-heading"><div><span className="eyebrow">{t.board}</span><h1 id="board-heading" tabIndex={-1}>{project.title}</h1>{project.description && <p className="project-description">{project.description}</p>}</div>
+  const style = resolveStyle(project.style);
+  const backgroundUrl = useAssetUrl(style.backgroundMode === 'image' ? style.backgroundAssetId : null);
+  return <div className="design-surface" style={appearance(project.style, backgroundUrl)}>
+    <div className={`canvas-heading title-${style.titleDecoration}`} style={{ textAlign: style.titleAlign }}><div className={!style.showTitle ? 'visually-hidden' : ''}><span className="eyebrow">{t.board}</span><h1 id="board-heading" tabIndex={-1}>{project.title}</h1>{project.description && <p className="project-description">{project.description}</p>}</div>
       <button className="icon-button" onClick={() => onSelect({ kind: 'project' })} aria-label={t.projectSettings} title={t.projectSettings}><Icon name="settings" /></button>
     </div>
     <div className="board-meta"><span>{t.boardHint}</span><span>{t.tierCount(project.tiers.length)}<span className="meta-divider">/</span>{t.itemCount(Object.keys(project.items).length)}</span></div>
@@ -72,5 +78,5 @@ export function Board({ onSelect, onAddText, onAddTier, onAddImages }: { onSelec
         {project.unrankedItemIds.length === 0 && <div className="empty-tray"><span className="empty-icon"><Icon name="text" size={24} /></span><div><h3>{t.emptyTray}</h3><p>{t.emptyTrayHint}</p></div></div>}
       </div>
     </section>
-  </>;
+  </div>;
 }
