@@ -1,0 +1,7 @@
+.pwa-controls { display: flex; align-items: center; gap: 8px; }
+.offline-status { font-size: 12px; color: #784b12; background: #fff0cd; padding: 4px 8px; border-radius: 4px; }
+.pwa-notice { order: 1; flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0; padding: 8px 12px; background: #fff; color: #29342f; border: 2px solid #155d4d; border-radius: 8px; }
+.pwa-notice p { margin: 0; }
+.pwa-notice .pwa-actions { margin: 0; }
+.pwa-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.pwa-panel p { line-height: 1.7; overflow-wrap: anywhere; }

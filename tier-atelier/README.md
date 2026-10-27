@@ -1,6 +1,6 @@
 # TIER ATELIER
 
-PCとスマートフォンでTier表を作成する、ブラウザ内で動作するWebアプリです。フェーズ5の操作支援まで実装しています。
+PCとスマートフォンでTier表を作成する、ブラウザ内で動作するWebアプリです。フェーズ6のPWA・オフライン対応まで実装しています。
 
 ## 現在使える機能
 
@@ -10,7 +10,7 @@ PCでは3カラムと左右パネルの表示切替、スマートフォンで�
 
 画像の一括登録、画像を共有するアイテム複製、プロジェクトの作成・一覧・切り替え・複製・削除にも対応しています。確定した編集内容と画像は、このブラウザのIndexedDBへ自動保存します。再読み込みすると、前回開いていたプロジェクトを読み込みます。
 
-画像を含むJSONバックアップと復元ができます。背景・文字・カードのデザイン編集とテンプレート、PNG・JPEG・WebP出力、印刷・共有、Undo・Redo、検索・タグフィルター、複数選択・一括移動に対応しています。PWA・オフライン対応と実機検証の残件は[TASKS.md](TASKS.md)に記録しています。
+画像を含むJSONバックアップと復元ができます。背景・文字・カードのデザイン編集とテンプレート、PNG・JPEG・WebP出力、印刷・共有、Undo・Redo、検索・タグフィルター、複数選択・一括移動に対応しています。オフライン編集と更新通知も利用できます。実機検証の残件は[TASKS.md](TASKS.md)に記録しています。
 
 ## 起動
 
@@ -107,25 +107,40 @@ PNG・WebPでは透過背景を選べます。透過時は表全体の背景色�
 
 ## 検証とビルド
 
+### PWA・オフライン・更新
+
+本番ビルドをHTTPSまたはlocalhostで開き、「アプリ・オフライン」で「オフラインで利用できます。」と表示されるまで待ちます。準備後は同じURLをオフラインで開き、保存済みプロジェクトの編集、画像登録、デザイン、画像出力、JSONバックアップと復元、Undo・Redoを利用できます。共有先への送信には接続が必要な場合があります。
+
+対応ブラウザではインストールボタンを表示します。iPhone・iPadではSafariの共有メニューから「ホーム画面に追加」を選べます。[Appleの案内](https://support.apple.com/ja-jp/guide/iphone/iph42ab2f3a7/ios)も参照してください。インストールはオフライン利用の必須条件ではありません。
+
+更新が見つかると通知を表示します。「あとで」で通知を閉じても、同じ設定画面から更新できます。「保存して更新」は確定済みの変更を保存してから再読み込みします。未適用の入力、画像登録などの処理、ドラッグが残る場合は更新できません。同じ公開先を別タブ・ウィンドウで開いている場合は、その編集を保存して閉じてから再試行します。
+
+保存や更新の取得に失敗した場合は現在の画面を保持し、エラーを表示します。保存失敗時はJSONバックアップを確保してから再試行してください。更新後は、通常の再読み込みと同じくUndo・Redo履歴と検索・選択状態がリセットされます。更新確認は起動時、オンラインへの復帰時、画面への復帰時と「更新を確認する」から行います。自動確認の間隔は最低60秒です。
+
+ブラウザのデータ削除や容量不足によって、保存データやオフライン用ファイルが失われる場合があります。必要なプロジェクトは画像込みJSONを保存してください。開発サーバーではService Workerを登録しません。
+
+### コマンド
+
 ```powershell
 pnpm typecheck
 pnpm lint
 pnpm test
 pnpm exec playwright install chromium
 pnpm test:e2e --workers=2
+pnpm test:pwa
 pnpm build
 pnpm preview
 ```
 
-Playwright用Chromiumがインストール済みなら、ブラウザのインストールは不要です。ブラウザテストは専用ポート4178でViteを起動します。テストはユーザーのブラウザプロファイルや既存データを使用しません。
+Playwright用Chromiumがインストール済みなら、ブラウザのインストールは不要です。通常のブラウザテストはポート4178でViteを起動します。PWAテストは`.qa/`内に2版の本番ビルドを作り、ポート4180で静的配信を切り替えます。テストはユーザーのブラウザプロファイルや既存データを使用しません。
 
-`pnpm build`で生成される`dist/`を静的サーバーで配信できます。`base: './'`を指定しているため、サブディレクトリへの配置に対応します。現段階では公開処理とService Workerを追加していません。既存のキャラ属性メーカー用の公開ワークフローは変更していません。
+`pnpm build`で生成される`dist/`を静的サーバーで配信できます。`base: './'`を指定しているため、サブディレクトリへの配置に対応します。[公開手順](docs/deployment.md)にGitHub Pages・さくらサーバーの配置、更新、復旧方法を記載しています。既存のキャラ属性メーカー用公開ワークフローは変更していません。
 
 ## データと拡張
 
 プロジェクト、Tier、アイテムにはUUIDを使用します。Tierの順序は`tiers`、アイテムの順序は各Tierの`itemIds`と`unrankedItemIds`で管理します。配置変更は一括更新し、同じアイテムが複数箇所に所属しないようにしています。
 
-画像素材は`blobKey`で参照し、元画像とサムネイルのBlobをプロジェクトとは別のテーブルに保存します。日本語文言は`src/app/`内の`messages.ts`、`storageMessages.ts`、`designMessages.ts`、`exportMessages.ts`、`editingMessages.ts`にまとめています。保存形式の詳細は[DATA_SCHEMA.md](DATA_SCHEMA.md)、設計方針は[docs/development-plan.md](docs/development-plan.md)を参照してください。
+画像素材は`blobKey`で参照し、元画像とサムネイルのBlobをプロジェクトとは別のテーブルに保存します。日本語文言は`src/app/`内の`messages.ts`、`storageMessages.ts`、`designMessages.ts`、`exportMessages.ts`、`editingMessages.ts`、`pwaMessages.ts`にまとめています。保存形式の詳細は[DATA_SCHEMA.md](DATA_SCHEMA.md)、設計方針は[docs/development-plan.md](docs/development-plan.md)を参照してください。
 
 テーマは`src/data/themes/themes.json`、ランク配色は同じディレクトリの`ranks.json`で管理します。配列に固有の`id`、表示名、配色、必要なスタイルを追加すると選択肢に反映されます。テーマの省略項目は`features/design/settings.ts`の既定値を使い、読み込み時にZodで検証します。
 
@@ -142,10 +157,14 @@ tier-atelier/
 │  ├─ features/backup/     画像を含むJSON入出力
 │  ├─ features/export/     Canvas画像出力・印刷・共有URLとファイル
 │  ├─ features/storage/    自動保存とプロジェクト操作
+│  ├─ features/pwa/        更新・インストール・保存前確認
 │  ├─ stores/              Zustand状態管理
 │  └─ styles/              共通スタイルとレスポンシブ表示
 ├─ tests/unit/             編集・保存・検証・入出力の単体テスト
 ├─ tests/e2e/              Playwrightブラウザテスト
+├─ tests/pwa/              本番ビルドのオフライン・更新テスト
+├─ worker/                 静的ファイルのキャッシュと更新制御
+├─ scripts/                PWAテスト実行・既存SVGからアイコン生成
 ├─ docs/                   開発計画・企画書原文・検証記録
 ├─ DATA_SCHEMA.md
 ├─ TEST_CASES.md

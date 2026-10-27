@@ -6,5 +6,8 @@ import './styles/app.css';
 import './styles/design.css';
 import './styles/export.css';
 import './styles/editing.css';
+import './styles/pwa.css';
+import { initializePwa } from './features/pwa/client';
 
+initializePwa();
 createRoot(document.getElementById('root')!).render(<StrictMode><ErrorBoundary><App /></ErrorBoundary></StrictMode>);

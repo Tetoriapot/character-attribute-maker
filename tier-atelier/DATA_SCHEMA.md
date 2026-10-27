@@ -1,5 +1,15 @@
 # データ設計
 
+## PWAのキャッシュと保存データ
+
+フェーズ6でもschemaVersion、backupVersion、IndexedDBのバージョンは1を維持します。更新通知・インストール状態はメモリに保持し、プロジェクトやJSONのキーは変更していません。
+
+Service WorkerはアプリのHTML・JavaScript・CSS・Manifest・アイコンだけをCache Storageへ事前保存します。遅延読み込みの画像出力画面も含みます。利用者の画像と編集内容は既存のIndexedDBを使用し、キャッシュや外部サーバーへ複製しません。
+
+キャッシュ名は`tier-atelier`とService Workerのscopeを含み、配置先ごとに分けます。更新時にはそのキャッシュ内の不要になった静的ファイルを整理します。他の配置先やアプリのキャッシュ、IndexedDBは削除しません。同一オリジンの別パスでこのアプリを開いた場合、既存仕様どおりIndexedDBのプロジェクト一覧は共有します。
+
+更新は未適用入力・処理中・ドラッグを検査し、編集操作を止めて`flushSave`を待ちます。保存に失敗した場合は現在の編集・画像・履歴を保持します。同じ公開先を開いている別タブがある場合も適用を中止します。成功した場合だけ待機中のService Workerを有効化し、再読み込みします。再読み込みでUndo・Redo履歴は消えます。
+
 ## プロジェクト
 
 `src/data/types.ts`を型定義として使用し、企画書の`schemaVersion: 1`を維持します。`id`、`title`、`description`、`createdAt`、`updatedAt`、`tiers`、`unrankedItemIds`、`items`、`assets`、`style`を持ちます。

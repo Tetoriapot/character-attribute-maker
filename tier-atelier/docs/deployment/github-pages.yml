@@ -1,0 +1,46 @@
+name: Deploy tools to GitHub Pages
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24.19.0'
+          package-manager-cache: false
+      - run: npm install --global pnpm@11.25.0
+      - run: pnpm install --frozen-lockfile
+        working-directory: tier-atelier
+      - name: Verify application
+        working-directory: tier-atelier
+        run: |
+          pnpm typecheck
+          pnpm lint
+          pnpm test
+          pnpm exec playwright install --with-deps chromium
+          pnpm test:e2e --workers=2
+          pnpm test:pwa
+          pnpm build
+      - name: Preserve existing site and add Tier Atelier
+        run: |
+          mkdir -p .pages/tier-atelier
+          cp -a character-attribute-maker/. .pages/
+          cp -a tier-atelier/dist/. .pages/tier-atelier/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: .pages
+      - uses: actions/deploy-pages@v4
+        id: deployment

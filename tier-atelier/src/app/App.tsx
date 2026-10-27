@@ -20,6 +20,8 @@ import { e } from './exportMessages';
 import { SharedProject } from '../components/SharedProject';
 import { HistoryTools } from '../components/EditingTools';
 import { h } from './editingMessages';
+import { PwaControls } from '../components/PwaControls';
+import { usePwa } from '../features/pwa/client';
 
 const ExportPanel = lazy(() => import('../components/ExportPanel'));
 
@@ -69,7 +71,7 @@ export default function App() {
   }, [busy, focusAfterOperation]);
   useEffect(() => {
     if (!dirty && !draftEdited && !busy) return;
-    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    const warn = (event: BeforeUnloadEvent) => { if (usePwa.getState().reloading) return; event.preventDefault(); event.returnValue = ''; };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty, draftEdited, busy]);
@@ -115,6 +117,7 @@ export default function App() {
       </header>
       <div className="workspace-bar"><div className="workspace-title"><Icon name="layers" size={16} /><span>{t.editor}</span><button className="button secondary small export-open" disabled={busy} onClick={() => showDialog('export')}>{e.open}</button></div>
         <HistoryTools />
+        <PwaControls />
         <div className="workspace-tools"><span className={`save-status ${saveStatus}`} data-testid="save-status" role="status">{s[saveStatus]}</span><span className="toolbar-divider" />
           <button className="icon-button" aria-label={t.panelLeft} aria-pressed={!compact && leftVisible} onClick={() => compact ? setDialog('tiers') : setLeftVisible(!leftVisible)} title={t.panelLeft}><Icon name="panel" /></button>
           <button className="icon-button" aria-label={t.panelRight} aria-pressed={!compact && rightVisible} onClick={() => compact ? setDialog('properties') : setRightVisible(!rightVisible)} title={t.panelRight}><Icon name="settings" /></button>

@@ -33,7 +33,7 @@ dnd-kitは現行のReact APIを採用します。[公式移行ガイド](https:/
 
 フェーズ3では依存ライブラリを追加・更新していません。背景やテーマはCSS、切り抜きプレビューはCanvasで表示し、既存の編集・検証・保存処理へ接続しています。
 
-vite-plugin-pwaはフェーズ6で追加します。vite-plugin-pwa 2.0.0のVite対応範囲にVite 8が含まれることをレジストリで確認済みです。各フェーズの開始時にも互換性を再確認します。
+フェーズ6でvite-plugin-pwa 2.0.0、workbox-core・precaching・routing 7.4.1を追加しました。2026年10月28日にnpmレジストリでVite 8・Node.js 24との互換性を再確認し、strict-peer-dependencies付きで導入しています。injectManifest方式で静的ファイルを事前キャッシュし、更新前の保存と別タブの確認は独自のService Workerメッセージで処理します。[公式のinjectManifest仕様](https://vite-pwa-org.netlify.app/guide/inject-manifest.html)を参照しています。
 
 フェーズ4ではCanvas 2Dを採用し、依存ライブラリを追加していません。企画書で候補にしたhtml-to-imageは、編集DOMの状態やサムネイルに出力が依存するため採用を見送りました。保存済みの設定と元画像を使う専用の描画処理で、編集ボタンの除外、折りたたんだ行の出力、切り抜きと高倍率に対応します。出力パネルは遅延読み込みにしています。
 
@@ -55,4 +55,4 @@ vite-plugin-pwaはフェーズ6で追加します。vite-plugin-pwa 2.0.0のVite
 
 ## 現段階の制限
 
-フェーズ5の操作支援まで提供しています。PWA・オフライン編集はフェーズ6の要件です。iPhone・Android実機とスクリーンリーダーによる操作確認は未完了で、[検証記録](verification-phase5.md)とTASKSに残しています。プロダクト全体の完了条件はフェーズ6まで完了した時点で判定します。
+フェーズ6のPWA・オフライン編集まで提供しています。iPhone・Android実機とスクリーンリーダー、実際のインストール画面・OS共有・プリンター、公開先での配置確認は未完了です。Windows版WebKit・Firefoxの環境制約も含め、[検証記録](verification-phase6.md)とTASKSに残しています。
