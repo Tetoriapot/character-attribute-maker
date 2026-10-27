@@ -3,6 +3,7 @@ import { useEditor } from '../stores/editorStore';
 import { confirmDrafts } from '../features/editor/useDraft';
 import { matchingIds, selectableIds } from '../features/editor/filter';
 import { h } from '../app/editingMessages';
+import { d } from '../app/designMessages';
 import { t } from '../app/messages';
 import { Field } from './Fields';
 
@@ -35,6 +36,7 @@ export function HistoryTools() {
 }
 
 export function EditingTools() {
+  const busy = useEditor((state) => state.busy);
   const project = useEditor((state) => state.project), query = useEditor((state) => state.query), tags = useEditor((state) => state.filterTags);
   const selected = useEditor((state) => state.selectedIds), mode = useEditor((state) => state.selectionMode);
   const zoom = useEditor((state) => state.zoom), grid = useEditor((state) => state.grid), dragging = useEditor((state) => !!state.draggingId);
@@ -49,6 +51,14 @@ export function EditingTools() {
       <div className="editing-search"><Field label={h.search}>{(id) => <input id={id} type="search" value={query} maxLength={200} placeholder={h.search} onChange={(event) => useEditor.setState({ query: event.target.value })} />}</Field>
         <Field label={h.zoom}>{(id) => <select id={id} value={zoom} onChange={(event) => useEditor.setState({ zoom: Number(event.target.value) })}>{[50, 75, 100, 125, 150, 200].map((value) => <option key={value} value={value}>{value}%</option>)}</select>}</Field>
         <label className="toggle-label"><input type="checkbox" checked={grid} onChange={(event) => useEditor.setState({ grid: event.target.checked })} />{h.grid}</label>
+      </div>
+      <div className="image-name-setting">
+        <label className="toggle-label"><input type="checkbox" disabled={busy} checked={project.style.showImageNames === false} onChange={(event) => {
+          if (!confirmDrafts()) return;
+          if (useEditor.getState().dispatch({ type: 'design.update', style: { showImageNames: !event.target.checked } }, d.applied)) {
+            useEditor.setState((state) => ({ drafts: {}, editEpoch: state.editEpoch + 1 }));
+          }
+        }} />{d.hideImageNames}</label><p className="field-hint">{d.imageNamesHint}</p>
       </div>
       <details className="filter-tags"><summary>{h.tags}{tags.length > 0 && ` (${tags.length})`}</summary><p className="field-hint">{h.tagHint}</p><div className="tag-options">{availableTags.length ? availableTags.map((tag) => <label key={tag}><input type="checkbox" checked={tags.includes(tag)} onChange={(event) => useEditor.setState({ filterTags: event.target.checked ? [...tags, tag] : tags.filter((value) => value !== tag) })} />{tag}</label>) : <p>{h.noTags}</p>}</div></details>
       <div className="editing-actions"><button className="button secondary small" disabled={!query && !tags.length} onClick={() => useEditor.setState({ query: '', filterTags: [] })}>{h.resetFilter}</button><span role="status">{h.results(visible.length, Object.keys(project.items).length)}</span>

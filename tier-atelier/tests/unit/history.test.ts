@@ -31,6 +31,7 @@ it('round-trips all editing commands with stable IDs, placements and unknown key
     { type: 'images.add', images: [{ asset, item: { id: imageId, assetId: asset.id, name: '画像', description: '', tags: [], createdAt: project.createdAt } }] },
     { type: 'item.crop', id: imageId, crop: { x: 0, y: 0, width: .5, height: 1 } },
     { type: 'design.update', style: { itemSize: 100, gap: 20 } },
+    { type: 'design.update', style: { showImageNames: false } },
     { type: 'design.theme', id: themes[1]!.id, scope: 'all' },
     { type: 'design.ranks', id: rankPresets[1]!.id },
     { type: 'design.background', asset: { ...asset, id: crypto.randomUUID(), blobKey: crypto.randomUUID() } },

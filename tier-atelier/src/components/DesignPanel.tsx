@@ -66,6 +66,8 @@ export function DesignPanel() {
       </details>
       <details className="design-section"><summary>{d.card}</summary>
         {select('imageFit', d.fit, { contain: d.contain, cover: d.cover })}{toggle('showItemNames', d.showNames)}
+        <label className="toggle-label design-toggle"><input type="checkbox" checked={!style.showImageNames} onChange={(e) => update('showImageNames', !e.target.checked)} />{d.hideImageNames}</label>
+        <p className="field-hint">{d.imageNamesHint}</p>
         {number('radius', d.radius, 0, 40)}{color('cardBackground', d.cardBackground)}{color('cardTextColor', d.cardTextColor)}
         {color('borderColor', d.borderColor)}{number('borderWidth', d.borderWidth, 0, 8)}
         {select('borderStyle', d.borderStyle, { solid: d.solid, dashed: d.dashed, double: d.double })}{select('shadow', d.shadow, { none: d.none, soft: d.soft, hard: d.hard })}

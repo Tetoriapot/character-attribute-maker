@@ -163,12 +163,31 @@ describe('image validation before browser decoding', () => {
     new DataView(oversized.buffer).setUint32(16, 6000); new DataView(oversized.buffer).setUint32(20, 6000);
     expect(() => inspectImage(oversized)).toThrow('寸法');
   });
-  it('rejects empty images, extension/MIME mismatches and oversized files', async () => {
+  it('rejects empty images, unsupported metadata and oversized files', async () => {
     await expect(prepareImage(new Blob([]), 'empty.png')).rejects.toThrow('空');
-    await expect(prepareImage(new Blob([png], { type: 'image/jpeg' }), 'a.png')).rejects.toThrow('一致');
-    await expect(prepareImage(new Blob([png], { type: 'image/png' }), 'a.svg')).rejects.toThrow('一致');
+    await expect(prepareImage(new Blob([png], { type: 'text/html' }), 'a.png')).rejects.toThrow('対応していない');
+    await expect(prepareImage(new Blob([png], { type: 'image/png' }), 'a.svg')).rejects.toThrow('対応していない');
+    await expect(prepareImage(new Blob([png]), 'a')).rejects.toThrow('対応していない');
     const large = new Blob([png]); Object.defineProperty(large, 'size', { value: 20 * MiB + 1 });
     await expect(prepareImage(large, 'large.png')).rejects.toThrow('上限');
+  });
+  it.each(['image/jpeg', 'image/webp', '', 'application/octet-stream'])('normalizes upload metadata from raster bytes for MIME %s without changing original bytes', async (type) => {
+    const close = vi.fn();
+    const decode = vi.fn(async () => ({ width: 1, height: 1, close }));
+    vi.stubGlobal('createImageBitmap', decode);
+    vi.stubGlobal('document', { createElement: () => ({ getContext: () => ({ drawImage: vi.fn() }), toBlob: (callback: (blob: Blob) => void) => callback(new Blob([png], { type: 'image/png' })) }) });
+    try {
+      const prepared = await prepareImage(new Blob([png], { type }), '日本語 画像.JPEG');
+      expect(prepared.asset).toMatchObject({ mimeType: 'image/png', originalName: '日本語 画像.JPEG' });
+      expect(prepared.item.name).toBe('日本語 画像');
+      expect(prepared.record.blob.type).toBe('image/png');
+      expect(new Uint8Array(await prepared.record.blob.arrayBuffer())).toEqual(png);
+      expect(decode).toHaveBeenCalledWith(prepared.record.blob);
+      expect(close).toHaveBeenCalledOnce();
+    } finally { vi.unstubAllGlobals(); }
+  });
+  it('still rejects conflicting MIME inside backups', async () => {
+    await expect(prepareImage(new Blob([png], { type: 'image/jpeg' }), 'backup', false)).rejects.toThrow('バックアップ');
   });
   it('enforces per-batch count and size limits', () => {
     expect(() => validateBatch(Array.from({ length: 101 }, () => new File([png], 'a.png')))).toThrow('100枚');

@@ -60,7 +60,11 @@ export async function prepareImage(blob: Blob, originalName: string, checkExtens
   if (blob.size > MAX_IMAGE_BYTES) throw new Error(s.imageSize);
   const info = inspectImage(new Uint8Array(await blob.arrayBuffer()));
   const extension = originalName.split('.').at(-1)?.toLowerCase() ?? '';
-  if ((blob.type && blob.type !== info.mimeType) || (checkExtension && extensions[extension] !== info.mimeType)) throw new Error(s.imageFormat);
+  // File MIME often comes from its extension. Trust validated raster bytes for uploads,
+  // but keep backup metadata strict so corrupted archives are not silently repaired.
+  if (checkExtension) {
+    if (!Object.hasOwn(extensions, extension) || (blob.type && blob.type !== 'application/octet-stream' && !Object.values(extensions).includes(blob.type))) throw new Error(s.imageFormat);
+  } else if (blob.type && blob.type !== info.mimeType) throw new Error(s.invalidBackup);
   const normalized = blob.slice(0, blob.size, info.mimeType);
   let bitmap: ImageBitmap;
   try { bitmap = await createImageBitmap(normalized); } catch { throw new Error(s.invalidImage); }

@@ -1,5 +1,5 @@
 import type { Crop, Project, Tier } from '../../data/types';
-import { resolveStyle } from '../design/settings';
+import { isItemNameVisible, resolveStyle } from '../design/settings';
 import type { ExportOptions } from './options';
 import { e } from '../../app/exportMessages';
 
@@ -52,7 +52,7 @@ export function buildLayout(project: Project, options: ExportOptions, measure: M
     for (let start = 0; start < ids.length; start += columns) {
       const group = ids.slice(start, start + columns).map((id, column) => {
         const item = project.items[id]!;
-        const lines = s.showItemNames ? wrapText(item.name, imageSize, (value) => measure(value, s.fontSize, 400)) : [];
+        const lines = isItemNameVisible(item, s) ? wrapText(item.name, imageSize, (value) => measure(value, s.fontSize, 400)) : [];
         return { id, x: padding + labelWidth + padding + column * (cardWidth + s.gap), y: cardY, width: cardWidth, height: inset * 2 + imageSize + (lines.length ? 5 + lines.length * s.fontSize * 1.5 : 0), imageSize, lines };
       });
       cards.push(...group);

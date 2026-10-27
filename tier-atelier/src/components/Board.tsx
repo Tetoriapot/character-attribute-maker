@@ -7,7 +7,7 @@ import { t } from '../app/messages';
 import { storageText as s } from '../app/storageMessages';
 import { AssetImage } from './AssetImage';
 import { appearance } from '../features/design/appearance';
-import { resolveStyle } from '../features/design/settings';
+import { isItemNameVisible, resolveStyle } from '../features/design/settings';
 import { useAssetUrl } from '../features/assets/useAssetUrl';
 import { matchingIds } from '../features/editor/filter';
 import { VirtualTray } from './VirtualTray';
@@ -23,7 +23,7 @@ export function ItemCard({ item, selected, locked, onSelect }: { item: Item; sel
   return <div ref={(node) => { draggable.ref(node); drop.ref(node); }}
     data-dragging={draggable.isDragging || draggable.isDropping} className={`item-card ${selected ? 'selected' : ''} ${multiSelected ? 'multi-selected' : ''} ${drop.isDropTarget ? 'drop-target' : ''}`}>
     <button type="button" className="item-select" disabled={mode && locked} onClick={(event) => { if (mode || event.ctrlKey || event.metaKey || event.shiftKey) toggle(item.id, event.shiftKey); else onSelect(); }} aria-label={mode ? h.selectItem(item.name) : t.editItem(item.name)} aria-pressed={mode ? multiSelected : selected} title={item.name}>
-      {item.assetId ? <AssetImage assetId={item.assetId} crop={item.crop} fit={style.imageFit} /> : <span className="item-initial" aria-hidden="true">{Array.from(item.name)[0]}</span>}<span className={`item-name ${!style.showItemNames ? 'visually-hidden' : ''}`}>{item.name}</span>
+      {item.assetId ? <AssetImage assetId={item.assetId} crop={item.crop} fit={style.imageFit} /> : <span className="item-initial" aria-hidden="true">{Array.from(item.name)[0]}</span>}<span className={`item-name ${!isItemNameVisible(item, style) ? 'visually-hidden' : ''}`}>{item.name}</span>
     </button>
     {mode && <input className="item-checkbox" type="checkbox" disabled={locked} checked={multiSelected} aria-label={h.selectItem(item.name)} onChange={() => toggle(item.id)} />}
     <button ref={draggable.handleRef} type="button" className="item-grip" disabled={locked} aria-label={t.dragItem(item.name)} title={t.dragItem(item.name)}><Icon name="grip" size={14} /></button>

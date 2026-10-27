@@ -20,12 +20,12 @@ async function ready(page: Page, path = '/') {
   await page.waitForFunction(() => !!navigator.serviceWorker.controller);
   await panel(page).getByRole('button', { name: '閉じる', exact: true }).click();
 }
-async function images(page: Page, count: number) {
-  const encoded = await page.evaluate(() => {
+async function images(page: Page, count: number, contentType = 'image/png') {
+  const encoded = await page.evaluate((type) => {
     const canvas = document.createElement('canvas'); canvas.width = 96; canvas.height = 72;
     const ctx = canvas.getContext('2d')!; ctx.fillStyle = '#e77766'; ctx.fillRect(0, 0, 96, 72);
-    return canvas.toDataURL().split(',')[1]!;
-  });
+    return canvas.toDataURL(type).split(',')[1]!;
+  }, contentType);
   await page.getByRole('region', { name: '未分類アイテム', exact: true }).getByRole('button', { name: '画像を追加', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '画像を追加', exact: true });
   await dialog.getByLabel('画像ファイルを選択').setInputFiles(Array.from({ length: count }, (_, i) => ({ name: `日本語 画像${i}.png`, mimeType: 'image/png', buffer: Buffer.from(encoded, 'base64') })));
@@ -48,9 +48,12 @@ async function notify(page: Page) {
 for (const path of ['/', '/nested/tier-atelier/']) test(`offline saved images, lazy export, edits, history and JSON round-trip: ${path}`, async ({ page, context, isMobile }, info) => {
   await ready(page, path); await images(page, 24); await expect(page.getByTestId('save-status')).toHaveText('保存済み');
   await context.setOffline(true); await page.reload(); await expect(page.locator('.item-card')).toHaveCount(24);
-  await images(page, 1); await expect(page.locator('.item-card')).toHaveCount(25);
+  await images(page, 1, 'image/jpeg'); await expect(page.locator('.item-card')).toHaveCount(25);
   await page.getByRole('button', { name: '元に戻す', exact: true }).click(); await expect(page.locator('.item-card')).toHaveCount(24);
   await page.getByRole('button', { name: 'やり直す', exact: true }).click(); await expect(page.locator('.item-card')).toHaveCount(25);
+  if (isMobile) await page.locator('.editing-tools > summary').click();
+  await page.locator('.editing-tools').getByLabel('画像名を一括で非表示').check();
+  await expect(page.locator('.item-name:not(.visually-hidden)')).toHaveCount(0);
   await page.locator(isMobile ? '.mobile-toolbar' : '.left-panel').getByRole('button', { name: 'デザイン', exact: true }).click();
   const design = page.getByRole(isMobile ? 'dialog' : 'complementary', { name: 'プロパティ', exact: true });
   await design.getByLabel('背景色のカラーコード', { exact: true }).fill('#d5eafa');
@@ -84,6 +87,7 @@ for (const path of ['/', '/nested/tier-atelier/']) test(`offline saved images, l
   const manager = page.getByRole('dialog', { name: 'プロジェクト一覧', exact: true });
   await manager.getByLabel('JSONから復元', { exact: true }).setInputFiles({ name: '日本語 復元.json', mimeType: 'application/json', buffer: Buffer.from(before.text) });
   await expect(manager).not.toBeVisible(); await page.reload(); await expect(page.locator('.item-card')).toHaveCount(25);
+  await expect(page.locator('.item-name:not(.visually-hidden)')).toHaveCount(0);
   const after = await backup(page); expect(after.data.project.id).not.toBe(before.data.project.id);
   expect(after.data.project.items).toEqual(before.data.project.items); expect(after.data.project.style).toEqual(before.data.project.style);
   for (const [id, asset] of Object.entries(before.data.project.assets)) {

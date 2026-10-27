@@ -1,17 +1,19 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useEditor } from '../stores/editorStore';
-import { resolveStyle } from '../features/design/settings';
+import { isItemNameVisible, resolveStyle } from '../features/design/settings';
 import { nextGridIndex, visibleIndices } from '../features/editor/virtual';
 import { h } from '../app/editingMessages';
 
 export function VirtualTray({ ids, renderItem }: { ids: string[]; renderItem: (id: string) => ReactNode }) {
   const style = useEditor((state) => state.project.style), draggingId = useEditor((state) => state.draggingId);
+  const items = useEditor((state) => state.project.items);
+  const hasNames = useMemo(() => ids.some((id) => items[id] && isItemNameVisible(items[id], style)), [ids, items, style]);
   const s = resolveStyle(style), gap = Math.min(40, s.gap);
   const ref = useRef<HTMLDivElement>(null), pendingFocus = useRef<string | null>(null);
   const [width, setWidth] = useState(0), [scrollTop, setScrollTop] = useState(0), [focusId, setFocusId] = useState(ids[0] ?? '');
   const cellWidth = Math.max(1, Math.min(200, s.itemSize, width || s.itemSize));
   const columns = Math.max(1, Math.floor((width + gap) / (cellWidth + gap)));
-  const cardHeight = cellWidth + (s.showItemNames ? 5 + s.fontSize * 3 : 0), rowHeight = cardHeight + gap;
+  const cardHeight = cellWidth + (hasNames ? 5 + s.fontSize * 3 : 0), rowHeight = cardHeight + gap;
   const height = Math.min(480, rowHeight * Math.ceil(ids.length / columns));
   const totalHeight = Math.ceil(ids.length / columns) * rowHeight - gap;
   const focusIndex = Math.max(0, ids.indexOf(focusId));

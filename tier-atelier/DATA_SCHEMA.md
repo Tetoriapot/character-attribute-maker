@@ -28,11 +28,15 @@ Tierの削除では、所属するアイテムを未分類の末尾へ順序ど�
 
 ## Tier・アイテム・画像
 
+`style.showImageNames`は任意の真偽値です。省略時は`true`として扱い、旧データの表示を維持します。`false`では画像アイテムの名前だけを非表示にし、`item.name`・`asset.originalName`は保持します。既存の`showItemNames`が`false`の場合は、従来どおり画像と文字の両方の名前を隠します。描画・画像出力・仮想トレイは同じ判定を使います。テンプレートは`showImageNames`を上書きしません。schemaVersion・backupVersion・IndexedDBのバージョンは1のままです。
+
 Tierは`id`、`name`、`background`、`foreground`、`itemIds`と、任意の`minHeight`、`labelWidth`、`locked`を持ちます。`labelWidth`を省略すると共通のラベル幅を使います。折りたたみ状態は編集画面だけのUI状態であり、保存データや出力の除外設定には使いません。
 
 アイテムは`id`、`assetId`、`name`、`description`、`tags`、`createdAt`を持ちます。文字アイテムでは`assetId`は`null`、画像アイテムでは素材IDを参照します。アイテム名とTier名は空白除去後1〜80文字、プロジェクト名は1〜120文字、説明は1,000文字以内、タグは1件30文字以内・最大20件です。同じタグは重複を除きます。色は6桁の16進数です。
 
 画像メタデータは`id`、`blobKey`、`mimeType`、`width`、`height`、`originalName`を持ちます。元画像とサムネイルのBlobをIndexedDBへ分離して保存し、アイテムが素材を参照します。通常のプロジェクトデータへBase64画像を埋め込みません。JPEGの寸法はファイル内の元寸法を記録し、サムネイルはEXIFの向きを反映します。
+
+画像の登録時はPNG・JPEG・WebP・GIFの実データからMIMEを決めます。対応形式間の拡張子・MIMEの不一致と、空または`application/octet-stream`のMIMEを補正します。元のバイト列と`originalName`は維持し、`asset.mimeType`と`record.blob.type`を検証済みのMIMEへそろえます。背景画像・ドロップ・貼り付けも同じ処理を使います。バックアップの復元では、MIMEや寸法の不一致を補正せずエラーにします。
 
 ## 保存・互換性
 

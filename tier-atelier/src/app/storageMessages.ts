@@ -18,7 +18,7 @@ export const storageText = {
   operationError: '処理に失敗しました。保存先の空き容量とブラウザの設定を確認し、再試行してください。',
   invalidImage: '画像を読み込めません。PNG・JPEG・WebP・GIFの正常なファイルを選んでください。',
   emptyFile: '空のファイルは登録できません。', imageSize: '画像の容量または寸法が上限を超えています。画像を小さくして再試行してください。',
-  imageFormat: '拡張子・MIME・画像の内容が一致していません。正しい画像形式で保存し直してください。',
+  imageFormat: '対応していない拡張子またはファイルの種類です。PNG・JPEG・WebP・GIFの画像を選んでください。',
   batchLimit: '1回に登録できる画像は100枚・合計100MiBまでです。分けて登録してください。',
   projectLimit: 'このプロジェクトの元画像が合計128MiBを超えます。別のプロジェクトに分けて登録してください。',
   backupLimit: 'JSONファイルは空でない256MiB以内のファイルを選んでください。',

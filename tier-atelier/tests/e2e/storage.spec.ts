@@ -137,8 +137,10 @@ test('corrupt image and backup inputs report errors without replacing saved data
     { name: '壊れた.png', mimeType: 'image/png', buffer: Buffer.from('broken') },
     { ...png, name: '誤った拡張子.svg' },
     { ...png, name: '大きな寸法.png', buffer: oversized },
+    { ...png, name: 'ヘッダーだけ.png', buffer: png.buffer.subarray(0, 24) },
+    { ...png, name: '未対応の種類.png', mimeType: 'text/html' },
   ]);
-  await expect(imageDialog(page).locator('.import-errors li')).toHaveCount(4);
+  await expect(imageDialog(page).locator('.import-errors li')).toHaveCount(6);
   await imageDialog(page).getByRole('button', { name: '閉じる', exact: true }).click();
   for (const content of ['{', JSON.stringify({ ...before.data, blobs: [] }), JSON.stringify({ ...before.data, project: { ...before.data.project, schemaVersion: 99 } })]) {
     await restore(page, content);
@@ -162,7 +164,7 @@ test('JPEG, WebP and GIF are decoded; file drop and image paste import images', 
     { name: '画像.webp', mimeType: 'image/webp', buffer: Buffer.from(formats[1]!, 'base64') },
     { name: '画像.gif', mimeType: 'image/gif', buffer: Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64') },
   ]);
-  const image = (await pictures(page, 1))[0]!;
+  const image = { name: '拡張子が異なる.png', buffer: Buffer.from(formats[0]!, 'base64') };
   await page.evaluate(({ base64, name }) => {
     const data = new DataTransfer(); data.items.add(new File([Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))], name, { type: 'image/png' }));
     document.querySelector('.canvas')!.dispatchEvent(new DragEvent('drop', { dataTransfer: data, bubbles: true, cancelable: true }));

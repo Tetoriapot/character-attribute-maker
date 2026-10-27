@@ -95,7 +95,8 @@ export function editProject(project: Project, command: EditorCommand, listener?:
         }
         if (command.type === 'design.theme') {
           const theme = themes.find((entry) => entry.id === command.id)!;
-          const keys = command.scope === 'ranks' ? rankKeys : command.scope === 'cards' ? cardKeys : (Object.keys(theme.style) as (keyof TierStyle)[]).filter((key) => key !== 'backgroundAssetId');
+          // Keep the user's image-name preference when changing visual templates.
+          const keys = command.scope === 'ranks' ? rankKeys : command.scope === 'cards' ? cardKeys : (Object.keys(theme.style) as (keyof TierStyle)[]).filter((key) => key !== 'backgroundAssetId' && key !== 'showImageNames');
           const patch = Object.fromEntries(keys.map((key) => [key, theme.style[key]]));
           Object.assign(draft.style, patch);
         }

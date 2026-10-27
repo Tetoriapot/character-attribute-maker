@@ -41,6 +41,7 @@ export interface TierStyle {
   radius: number;
   imageFit: 'cover' | 'contain';
   showItemNames: boolean;
+  showImageNames?: boolean;
   showTitle: boolean;
   borderColor: string;
   backgroundMode?: 'solid' | 'gradient' | 'pattern' | 'image';

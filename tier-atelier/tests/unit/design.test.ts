@@ -10,6 +10,8 @@ import { appearance } from '../../src/features/design/appearance';
 import { AtelierDatabase, deleteProject, loadProject, saveSnapshot } from '../../src/data/db';
 import { createBackup, readBackup } from '../../src/features/backup/backup';
 import type { PreparedImage } from '../../src/features/assets/images';
+import { buildLayout } from '../../src/features/export/layout';
+import { defaultExportOptions } from '../../src/features/export/options';
 
 function image(): PreparedImage {
   const id = crypto.randomUUID(), blobKey = crypto.randomUUID();
@@ -18,6 +20,27 @@ function image(): PreparedImage {
 }
 
 describe('design commands and compatibility', () => {
+  it('hides only image captions in output, preserves names and keeps the choice across templates', () => {
+    const picture = image();
+    let project = editProject(createProject(), { type: 'images.add', images: [picture] });
+    project = editProject(project, { type: 'item.add', name: '文字項目', description: '', tags: [] });
+    const original = project;
+    expect(resolveStyle(project.style).showImageNames).toBe(true);
+    project = editProject(project, { type: 'design.update', style: { showImageNames: false } });
+    expect(project.items).toEqual(original.items); expect(project.assets).toEqual(original.assets);
+    const options = { ...defaultExportOptions, includeUnranked: true };
+    const measure = (text: string) => text.length * 10;
+    const cards = buildLayout(project, options, measure).rows.at(-1)!.cards;
+    expect(cards[0]!.lines).toEqual([]); expect(cards[1]!.lines).toEqual(['文字項目']);
+    expect(cards[0]!.height).toBeLessThan(cards[1]!.height);
+    for (const scope of ['all', 'cards', 'ranks'] as const) {
+      expect(editProject(project, { type: 'design.theme', id: 'cyber', scope }).style.showImageNames).toBe(false);
+    }
+    expect(parseProject(JSON.parse(JSON.stringify(project)))).toEqual(project);
+    expect(() => parseProject({ ...project, style: { ...project.style, showImageNames: 'false' } })).toThrow();
+    const hiddenAll = editProject(project, { type: 'design.update', style: { showItemNames: false } });
+    expect(buildLayout(hiddenAll, options, measure).rows.at(-1)!.cards.every((card) => !card.lines.length)).toBe(true);
+  });
   it('loads a phase 2 document without rewriting old keys and resolves display defaults', () => {
     const project = createProject();
     expect(migrateProject(project)).toEqual(project);

@@ -19,6 +19,7 @@ export const styleSchema = z.looseObject({
   rowGap: z.number().min(0).max(32).optional(), borderWidth: z.number().min(0).max(8).optional(), borderStyle: z.enum(['solid', 'dashed', 'double']).optional(),
   cardBackground: color.optional(), cardTextColor: color.optional(), shadow: z.enum(['none', 'soft', 'hard']).optional(), titleSize: z.number().min(16).max(64).optional(),
   titleAlign: z.enum(['left', 'center', 'right']).optional(), titleDecoration: z.enum(['none', 'line', 'band']).optional(),
+  showImageNames: z.boolean().optional(),
 });
 // Older documents keep their previously valid size values. Newly edited values use the UI limits.
 export const editedStyleSchema = styleSchema.extend({ labelWidth: z.number().min(48).max(240), itemSize: z.number().min(40).max(200), gap: z.number().min(0).max(40), radius: z.number().min(0).max(40) });
