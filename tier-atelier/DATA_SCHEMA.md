@@ -12,7 +12,7 @@ Tierの削除では、所属するアイテムを未分類の末尾へ順序ど�
 
 ## Tier・アイテム・画像
 
-Tierは`id`、`name`、`background`、`foreground`、`itemIds`と、任意の`minHeight`、`labelWidth`、`locked`を持ちます。`labelWidth`を省略すると共通のラベル幅を使います。折りたたみ状態は編集画面だけのUI状態であり、データや将来の出力除外設定には使いません。
+Tierは`id`、`name`、`background`、`foreground`、`itemIds`と、任意の`minHeight`、`labelWidth`、`locked`を持ちます。`labelWidth`を省略すると共通のラベル幅を使います。折りたたみ状態は編集画面だけのUI状態であり、保存データや出力の除外設定には使いません。
 
 アイテムは`id`、`assetId`、`name`、`description`、`tags`、`createdAt`を持ちます。文字アイテムでは`assetId`は`null`、画像アイテムでは素材IDを参照します。アイテム名とTier名は空白除去後1〜80文字、プロジェクト名は1〜120文字、説明は1,000文字以内、タグは1件30文字以内・最大20件です。同じタグは重複を除きます。色は6桁の16進数です。
 
@@ -54,6 +54,16 @@ Dexieを使い、データベース`tier-atelier`のバージョン1に保存し
 復元時はプロジェクトIDとBlobキーを新しく発行します。Tier・アイテム・素材のIDはプロジェクト内で管理するため維持します。プロジェクト、Tier、アイテム、素材、style内の未知のフィールドも保持します。
 
 `migrateProject`を保存データの読み込みと復元の共通入口にしています。現在の対応形式は`schemaVersion: 1`だけです。未対応のバージョンは説明を表示して拒否します。保存形式を変更するフェーズでは、この入口へ変換処理と旧データのテストを追加します。
+
+## 出力設定と共有データ
+
+フェーズ4もschemaVersion・backupVersion・IndexedDBのバージョンは1のままです。画像出力と印刷はプロジェクトを読み取る処理で、編集データや元画像を書き換えません。
+
+`settings`の`exportOptions.v1`へ、最後に画像作成に成功した出力設定をJSON文字列で保存します。キーは`format`、`width`、`scale`、`transparent`、`includeTitle`、`includeUnranked`です。Zodで検証してから読み込み、JPEGの`transparent`は`false`に補正します。この設定はブラウザ共通で、プロジェクトやJSONバックアップには含めません。プレビューと印刷ページは一時データとして保持し、ダイアログを閉じると破棄します。
+
+共有用ファイルは既存のJSONバックアップと同じ形式です。軽量URLは`{ format: "tier-atelier-url", version: 1, project: ... }`をUTF-8でBase64URL化し、`#tier=`に付けます。クエリ文字列は共有URLへ引き継ぎません。URL全体の上限は8,000文字です。素材・背景参照・画像アイテムがある場合はURLを作成せず、JSONを案内します。
+
+URLを開くと形式とプロジェクトの参照整合性を検証します。取り込み時は既存データの保存を完了させ、新しいプロジェクトIDと日時を発行して保存します。Tier・アイテムのID、順序、文字、設定、未知キーを保持します。確認前や不正URLの読み込み時には新規保存も既存データの変更も行いません。
 
 ## デザイン設定の追加
 

@@ -1,0 +1,17 @@
+.export-open { margin-left: 8px; }
+.dialog:has(.export-panel) { width: min(760px, calc(100% - 24px)); }
+.export-panel > .field-hint { margin: 0 0 18px; }
+.export-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+.export-panel .toggle-label { margin-top: 14px; }
+.export-panel form .button { margin-top: 22px; }
+.export-preview { margin: 24px 0 16px; }
+.export-preview > div { background: repeating-conic-gradient(#e3e5e3 0% 25%, #fff 0% 50%) 0 0 / 16px 16px; border: 1px solid var(--line); border-radius: 6px; overflow: auto; max-height: 420px; }
+.export-preview img { display: block; width: 100%; height: auto; }
+.export-preview figcaption { font-size: 12px; margin-top: 8px; }
+.export-preview figcaption p { margin-top: 8px; color: #8a422b; }
+.export-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.export-panel h3 { font-size: 14px; }
+.export-panel textarea { overflow-wrap: anywhere; }
+.export-panel .property-section > .button { margin: 12px 0; }
+.export-print-frame { position: fixed; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; }
+@media (max-width: 720px) { .workspace-bar { flex-wrap: wrap; gap: 4px; padding-block: 4px; } .workspace-title { gap: 5px; } .export-open { margin-left: 0; padding: 5px 8px; } .workspace-tools { margin-left: auto; } }

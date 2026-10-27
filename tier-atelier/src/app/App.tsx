@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { DragDropProvider, type DragEndEvent } from '@dnd-kit/react';
 import { Accessibility, KeyboardSensor, PointerSensor, PointerActivationConstraints } from '@dnd-kit/dom';
 import { useEditor } from '../stores/editorStore';
@@ -16,6 +16,10 @@ import { confirmDrafts } from '../features/editor/useDraft';
 import { ProjectManager } from '../components/ProjectManager';
 import { ImageImport } from '../components/ImageImport';
 import { d } from './designMessages';
+import { e } from './exportMessages';
+import { SharedProject } from '../components/SharedProject';
+
+const ExportPanel = lazy(() => import('../components/ExportPanel'));
 
 const sensors = [KeyboardSensor, PointerSensor.configure({
   activationConstraints: (event) => event.pointerType === 'touch'
@@ -42,7 +46,7 @@ export default function App() {
   const compact = useCompactLayout();
   const [leftVisible, setLeftVisible] = useState(true);
   const [rightVisible, setRightVisible] = useState(true);
-  const [dialog, setDialog] = useState<'add' | 'help' | 'tiers' | 'properties' | 'projects' | 'images' | null>(null);
+  const [dialog, setDialog] = useState<'add' | 'help' | 'tiers' | 'properties' | 'projects' | 'images' | 'export' | null>(null);
   const project = useEditor((state) => state.project);
   const dirty = useEditor((state) => state.dirty);
   const draftEdited = useEditor((state) => Object.keys(state.drafts).length > 0);
@@ -104,7 +108,7 @@ export default function App() {
         <div className="header-project"><span className="header-divider" /><button onClick={() => choose({ kind: 'project' })} title={t.projectSettings}>{project.title}<Icon name="down" size={14} /></button></div>
         <div className="header-actions"><button className="button secondary small projects-button" disabled={busy} onClick={() => showDialog('projects')}>{s.projects}</button><button className="help-button" disabled={busy} aria-label={t.help} onClick={() => showDialog('help')}><Icon name="help" /><span>{t.help}</span></button></div>
       </header>
-      <div className="workspace-bar"><div className="workspace-title"><Icon name="layers" size={16} /><span>{t.editor}</span></div>
+      <div className="workspace-bar"><div className="workspace-title"><Icon name="layers" size={16} /><span>{t.editor}</span><button className="button secondary small export-open" disabled={busy} onClick={() => showDialog('export')}>{e.open}</button></div>
         <div className="workspace-tools"><span className={`save-status ${saveStatus}`} data-testid="save-status" role="status">{s[saveStatus]}</span><span className="toolbar-divider" />
           <button className="icon-button" aria-label={t.panelLeft} aria-pressed={!compact && leftVisible} onClick={() => compact ? setDialog('tiers') : setLeftVisible(!leftVisible)} title={t.panelLeft}><Icon name="panel" /></button>
           <button className="icon-button" aria-label={t.panelRight} aria-pressed={!compact && rightVisible} onClick={() => compact ? setDialog('properties') : setRightVisible(!rightVisible)} title={t.panelRight}><Icon name="settings" /></button>
@@ -133,6 +137,8 @@ export default function App() {
       {dialog === 'properties' && <Dialog drawer title={t.properties} onClose={closeDialog}><Properties /></Dialog>}
       {dialog === 'projects' && <Dialog title={s.projects} onClose={closeDialog}><ProjectManager onClose={closeDialog} /></Dialog>}
       {dialog === 'images' && <Dialog title={s.images} onClose={closeDialog}><ImageImport /></Dialog>}
+      {dialog === 'export' && <Dialog title={e.title} onClose={closeDialog}><Suspense fallback={<p role="status">{e.updating}</p>}><ExportPanel key={project.id} /></Suspense></Dialog>}
+      <SharedProject />
     </div>
   </DragDropProvider>;
 }

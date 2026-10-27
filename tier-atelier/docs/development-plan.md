@@ -2,7 +2,7 @@
 
 ## 作業範囲
 
-フェーズ1の編集エンジン、フェーズ2の画像・保存機能に続き、フェーズ3のデザイン編集を実装しました。企画書原文は[original-proposal.txt](original-proposal.txt)に保持しています。原文の要件は削除せず、各フェーズのタスクを[TASKS.md](../TASKS.md)に整理しています。
+フェーズ1〜3の編集・画像・保存・デザインに続き、フェーズ4の画像出力・印刷・共有を実装しました。企画書原文は[original-proposal.txt](original-proposal.txt)に保持しています。原文の要件は削除せず、各フェーズのタスクを[TASKS.md](../TASKS.md)に整理しています。
 
 同じリポジトリにある`character-attribute-maker/`は別アプリです。既存の変更、保存形式、操作、公開ワークフローを保持し、新しい`tier-atelier/`にReactアプリを追加します。
 
@@ -33,7 +33,11 @@ dnd-kitは現行のReact APIを採用します。[公式移行ガイド](https:/
 
 フェーズ3では依存ライブラリを追加・更新していません。背景やテーマはCSS、切り抜きプレビューはCanvasで表示し、既存の編集・検証・保存処理へ接続しています。
 
-vite-plugin-pwaはフェーズ6で追加します。vite-plugin-pwa 2.0.0のVite対応範囲にVite 8が含まれることをレジストリで確認済みです。各フェーズの開始時にも互換性を再確認します。画像出力の基盤は企画書のhtml-to-imageを候補として、フェーズ4で日本語・透過・長い表を検証して確定します。
+vite-plugin-pwaはフェーズ6で追加します。vite-plugin-pwa 2.0.0のVite対応範囲にVite 8が含まれることをレジストリで確認済みです。各フェーズの開始時にも互換性を再確認します。
+
+フェーズ4ではCanvas 2Dを採用し、依存ライブラリを追加していません。企画書で候補にしたhtml-to-imageは、編集DOMの状態やサムネイルに出力が依存するため採用を見送りました。保存済みの設定と元画像を使う専用の描画処理で、編集ボタンの除外、折りたたんだ行の出力、切り抜きと高倍率に対応します。出力パネルは遅延読み込みにしています。
+
+フォントは[FontFaceSet.ready](https://developer.mozilla.org/en-US/docs/Web/API/FontFaceSet/ready)と必要な書体の読み込み完了を待ちます。[Canvas.toBlob](https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/toBlob)は未対応形式でPNGを返す場合があるため、生成BlobのMIMEも確認します。[Web Share API](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/share)には、事前に生成したファイルをボタン操作から直接渡します。これらの仕様は2026年10月27日に確認しました。
 
 ## 実装の分担
 
@@ -47,4 +51,4 @@ vite-plugin-pwaはフェーズ6で追加します。vite-plugin-pwa 2.0.0のVite
 
 ## 現段階の制限
 
-フェーズ3までのデザイン編集・画像・保存・バックアップを提供しています。画像出力、Undo・Redo、PWA・オフライン編集は後続フェーズの要件です。未実装の操作ボタンは設置していません。プロダクト全体の完了条件はフェーズ6まで完了した時点で判定します。
+フェーズ4までの画像出力・印刷・共有を提供しています。Undo・Redo、PWA・オフライン編集は後続フェーズの要件です。未実装の操作ボタンは設置していません。プロダクト全体の完了条件はフェーズ6まで完了した時点で判定します。

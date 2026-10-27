@@ -7,6 +7,9 @@ import { MAX_PROJECT_BYTES, prepareImage, totalBytes, validateBatch, type Prepar
 import { createBackup, downloadBackup, readBackup } from '../backup/backup';
 import { storageText as s } from '../../app/storageMessages';
 import { d } from '../../app/designMessages';
+import { migrateProject } from '../../data/migrations';
+import { textOnly } from '../export/sharing';
+import { e } from '../../app/exportMessages';
 
 let revision = 0;
 let pending = new Map<string, StoredBlob>();
@@ -207,5 +210,15 @@ export function importProject(file: File) {
     const nextRevision = await saveSnapshot(data.project, 0, data.blobs);
     await activate(data.project, nextRevision, data.blobs);
     set({ announcement: s.restoreDone });
+  });
+}
+export function importSharedProject(source: Project) {
+  return exclusive(async () => {
+    const project = structuredClone(migrateProject(source));
+    if (!textOnly(project)) throw new EditorError(e.invalidUrl);
+    project.id = crypto.randomUUID(); project.createdAt = project.updatedAt = new Date().toISOString();
+    const nextRevision = await saveSnapshot(project, 0, []);
+    await activate(project, nextRevision, []);
+    set({ announcement: e.importDone });
   });
 }
