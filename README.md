@@ -74,6 +74,8 @@
 
 ## TIER ATELIER
 
-[公開ページを開く](https://tetoriapot.github.io/character-attribute-maker/tier-atelier/)。v0.7.2では「検索・選択・表示設定」をPCでも初期状態で折りたたみます。画像の形式判定修正と画像名の一括非表示については[検証記録](tier-atelier/docs/verification-image-names.md)を参照してください。右上の更新情報・ライト／ダーク切替・Helpも引き続き利用できます。
+[公開ページを開く](https://tetoriapot.github.io/character-attribute-maker/tier-atelier/)。v0.7.3ではランク名の列幅を自動・手動で調整できます。自動では最も長い名前に幅をそろえます。操作と検証結果は[列幅の検証記録](tier-atelier/docs/verification-label-width.md)を参照してください。
+
+「検索・選択・表示設定」はPCでも初期状態で折りたたみます。画像の形式判定修正と画像名の一括非表示については[検証記録](tier-atelier/docs/verification-image-names.md)を参照してください。右上の更新情報・ライト／ダーク切替・Helpも引き続き利用できます。
 
 Tier表を作成するReactアプリを[`tier-atelier/`](tier-atelier/)で開発しています。フェーズ6まで実装し、Tier編集、画像登録、プロジェクト管理、自動保存、画像込みのJSON復元、デザイン編集とテンプレート、PNG・JPEG・WebP出力、印刷・共有に対応しています。Undo・Redo、検索・タグフィルター、複数選択・一括移動、表示倍率・グリッド、未分類トレイの仮想スクロール、PWA・オフライン編集と更新通知も使えます。起動方法と検証の残件は[`tier-atelier/README.md`](tier-atelier/README.md)と[`TASKS.md`](tier-atelier/TASKS.md)、既存サイトと併設する公開方法は[公開手順](tier-atelier/docs/deployment.md)を参照してください。
