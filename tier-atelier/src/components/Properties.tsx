@@ -11,6 +11,9 @@ import { storageText as s } from '../app/storageMessages';
 import { d } from '../app/designMessages';
 import { DesignPanel } from './DesignPanel';
 import { CropEditor } from './CropEditor';
+import { LabelWidthFields, type LabelSizing } from './LabelWidthFields';
+import { resolveStyle } from '../features/design/settings';
+import { MIN_LABEL_WIDTH, MAX_LABEL_WIDTH } from '../features/design/labelWidth';
 
 function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return <Field label={label}>{(id) => <div className="color-value">
@@ -44,9 +47,12 @@ function TierProperties({ tier, project }: { tier: Tier; project: Project }) {
   const [foreground, setForeground] = useState(tier.foreground);
   const [minHeight, setMinHeight] = useState(tier.minHeight ?? 104);
   const [labelWidth, setLabelWidth] = useState(tier.labelWidth?.toString() ?? '');
+  const [labelSizing, setLabelSizing] = useState<LabelSizing>(() => resolveStyle(project.style));
   const [deleting, setDeleting] = useState(false);
   const index = project.tiers.findIndex((entry) => entry.id === tier.id);
-  useDraft(name !== tier.name || background !== tier.background || foreground !== tier.foreground || minHeight !== (tier.minHeight ?? 104) || labelWidth !== (tier.labelWidth?.toString() ?? ''));
+  const sizingChanged = labelSizing.labelWidth !== project.style.labelWidth || labelSizing.labelWidthMode !== (project.style.labelWidthMode ?? 'manual');
+  useDraft(name !== tier.name || background !== tier.background || foreground !== tier.foreground || minHeight !== (tier.minHeight ?? 104) || labelWidth !== (tier.labelWidth?.toString() ?? '') || sizingChanged);
+  useEffect(() => setLabelSizing(resolveStyle(project.style)), [project.style]);
   useEffect(() => {
     setName(tier.name);
     setBackground(tier.background);
@@ -55,7 +61,7 @@ function TierProperties({ tier, project }: { tier: Tier; project: Project }) {
   }, [tier.name, tier.background, tier.foreground, tier.minHeight, tier.labelWidth]);
   function submit(event: FormEvent) {
     event.preventDefault();
-    dispatch({ type: 'tier.update', id: tier.id, name, background, foreground, minHeight, labelWidth: labelWidth ? Number(labelWidth) : null });
+    dispatch({ type: 'tier.update', id: tier.id, name, background, foreground, minHeight, labelWidth: labelWidth ? Number(labelWidth) : null, ...(sizingChanged ? { labelSizing } : {}) });
   }
   return <>
     <div className="property-kind"><span>{t.tierSettings}</span><span className="count">{t.itemCount(tier.itemIds.length)}</span></div>
@@ -69,7 +75,9 @@ function TierProperties({ tier, project }: { tier: Tier; project: Project }) {
         </div>
         <div className="label-preview" aria-label={t.preview} style={{ backgroundColor: background, color: foreground }}><span>{name || t.label}</span></div>
         <Field label={d.minHeight} hint="64〜400">{(id) => <input id={id} type="number" required min={64} max={400} value={Number.isFinite(minHeight) ? minHeight : ''} onChange={(e) => setMinHeight(e.target.valueAsNumber)} />}</Field>
-        <Field label={d.tierWidth} hint={d.inherit}>{(id) => <input id={id} type="number" min={48} max={240} value={labelWidth} onChange={(e) => setLabelWidth(e.target.value)} />}</Field>
+        <LabelWidthFields value={labelSizing} onChange={setLabelSizing} />
+        <Field label={d.tierWidth} hint={labelSizing.labelWidthMode === 'auto' ? d.autoIndividualWidthHint : d.inherit}>{(id) => <input id={id} type="number" min={MIN_LABEL_WIDTH} max={MAX_LABEL_WIDTH} disabled={labelSizing.labelWidthMode === 'auto'} value={labelWidth} onChange={(e) => setLabelWidth(e.target.value)} />}</Field>
+        <p className="field-hint">{d.responsive}</p>
         <button className="button primary full" type="submit"><Icon name="check" />{t.apply}</button>
       </fieldset>
     </form>

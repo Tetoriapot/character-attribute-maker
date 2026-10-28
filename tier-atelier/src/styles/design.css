@@ -7,10 +7,12 @@
 .design-surface .title-band h1 { background: #80808020; border-inline-start: 5px solid currentColor; padding: 6px 12px; }
 .design-surface .eyebrow, .design-surface .project-description, .design-surface .board-meta, .design-surface .tier-empty, .design-surface .collapsed-content { color: inherit; }
 .design-surface .tier-board { display: flex; flex-direction: column; gap: var(--design-row-gap); background: transparent; border: 0; box-shadow: none; }
-.design-surface .tier-row { grid-template-columns: min(var(--tier-label, var(--design-label)), 35%) minmax(0, 1fr) 30px; min-height: var(--tier-height); background: transparent; border: 1px solid #80808070; border-radius: 0; }
+.design-surface .tier-row { grid-template-columns: min(var(--tier-label, var(--design-label)), 40%) minmax(0, 1fr) 30px; min-height: var(--tier-height); background: transparent; border: 1px solid #80808070; border-radius: 0; }
 .design-surface .tier-row.collapsed { min-height: 64px; }
 .design-surface .tier-label { border-radius: 0; }
 .design-surface .tier-name { font-size: var(--design-label-font); }
+.design-surface .tier-name span { white-space: pre-wrap; }
+.design-surface .tier-name > svg { flex-shrink: 0; }
 .design-surface .tier-tools { background: #fcfcfa; color: #465740; }
 .design-surface .button.secondary, .design-surface .canvas-heading .icon-button { color: #29342f; }
 .design-surface .item-zone { min-height: 0; gap: var(--design-gap); padding: min(var(--design-padding), 2vw); }

@@ -21,7 +21,7 @@ it('round-trips all editing commands with stable IDs, placements and unknown key
   const commands: EditorCommand[] = [
     { type: 'project.update', title: '変更', description: '説明' }, { type: 'tier.add' },
     { type: 'item.add', name: '追加項目', description: '追加説明', tags: ['新規'] },
-    { type: 'tier.update', id: tier.id, name: '最上位', background: '#123456', foreground: '#ffffff', minHeight: 140, labelWidth: 120 },
+    { type: 'tier.update', id: tier.id, name: '最上位', background: '#123456', foreground: '#ffffff', minHeight: 140, labelWidth: 120, labelSizing: { labelWidthMode: 'auto', labelWidth: 300 } },
     { type: 'tier.duplicate', id: tier.id }, { type: 'tier.move', id: tier.id, index: 2 },
     { type: 'item.update', id: item, name: '編集済み', description: '変更', tags: ['緑'] },
     { type: 'item.duplicate', id: item }, { type: 'item.move', id: item, tierId: tier.id },

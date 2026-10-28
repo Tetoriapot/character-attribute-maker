@@ -28,6 +28,10 @@ Tierの削除では、所属するアイテムを未分類の末尾へ順序ど�
 
 ## Tier・アイテム・画像
 
+`style.labelWidthMode`は任意の`auto`または`manual`です。省略時は`manual`として既存の共通幅・個別幅を使います。自動では全Tierの名前を現在のフォントとラベル文字サイズで測り、操作部分と余白を加えた共通幅を描画時に計算します。個別幅は自動表示中も保持し、手動に戻すと再び使います。算出した幅そのものは保存しません。
+
+手動編集の`style.labelWidth`と`tier.labelWidth`は48〜600pxを受け付けます。既存の共通幅は従来どおり正の有限値として読み込めます。画面と画像出力では表の40%を上限として折り返し、保存値を変えません。テンプレートは自動／手動の選択を維持し、共通の手動幅は従来どおり適用範囲に従って更新します。schemaVersion・backupVersion・IndexedDBのバージョンは1のままです。
+
 `style.showImageNames`は任意の真偽値です。省略時は`true`として扱い、旧データの表示を維持します。`false`では画像アイテムの名前だけを非表示にし、`item.name`・`asset.originalName`は保持します。既存の`showItemNames`が`false`の場合は、従来どおり画像と文字の両方の名前を隠します。描画・画像出力・仮想トレイは同じ判定を使います。テンプレートは`showImageNames`を上書きしません。schemaVersion・backupVersion・IndexedDBのバージョンは1のままです。
 
 Tierは`id`、`name`、`background`、`foreground`、`itemIds`と、任意の`minHeight`、`labelWidth`、`locked`を持ちます。`labelWidth`を省略すると共通のラベル幅を使います。折りたたみ状態は編集画面だけのUI状態であり、保存データや出力の除外設定には使いません。

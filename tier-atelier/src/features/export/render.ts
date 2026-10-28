@@ -27,7 +27,7 @@ export async function renderProject(project: Project, records: Map<string, Store
   try {
     try {
       const sample = [...new Set(Array.from(project.title + project.description + project.tiers.map((tier) => tier.name).join('') + Object.values(project.items).map((item) => item.name).join('')))].join('');
-      await Promise.all([document.fonts.load(`400 ${s.fontSize}px ${font}`, sample), document.fonts.load(`700 ${s.titleSize}px ${font}`, sample)]);
+      await Promise.all([document.fonts.load(`400 ${s.fontSize}px ${font}`, sample), document.fonts.load(`700 ${s.titleSize}px ${font}`, sample), document.fonts.load(`700 ${s.labelFontSize}px ${font}`, sample)]);
       await document.fonts.ready;
     } catch { throw new Error(e.fontError); }
     assertActive(signal);

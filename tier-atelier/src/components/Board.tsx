@@ -13,6 +13,7 @@ import { matchingIds } from '../features/editor/filter';
 import { VirtualTray } from './VirtualTray';
 import { EditingTools } from './EditingTools';
 import { h } from '../app/editingMessages';
+import { useLabelWidth } from '../features/design/useLabelWidth';
 
 export function ItemCard({ item, selected, locked, onSelect }: { item: Item; selected: boolean; locked?: boolean; onSelect: () => void }) {
   const style = useEditor((state) => state.project.style);
@@ -48,7 +49,7 @@ function TierRow({ tier, index, project, visible, selection, onSelect }: { tier:
   const draggable = useDraggable({ id: tier.id, type: 'tier', disabled: tier.locked });
   const drop = useDroppable({ id: `tier:${tier.id}`, accept: 'tier', disabled: draggable.isDragSource });
   const selected = selection.kind === 'tier' && selection.id === tier.id;
-  return <section aria-label={t.tierRegion(tier.name)} style={{ '--tier-height': `${Math.min(400, tier.minHeight ?? 104)}px`, ...(tier.labelWidth ? { '--tier-label': `${tier.labelWidth}px` } : {}) } as CSSProperties} ref={(node) => { draggable.ref(node); drop.ref(node); }}
+  return <section aria-label={t.tierRegion(tier.name)} style={{ '--tier-height': `${Math.min(400, tier.minHeight ?? 104)}px`, ...(tier.labelWidth && project.style.labelWidthMode !== 'auto' ? { '--tier-label': `${tier.labelWidth}px` } : {}) } as CSSProperties} ref={(node) => { draggable.ref(node); drop.ref(node); }}
     data-dragging={draggable.isDragging || draggable.isDropping} className={`tier-row ${selected ? 'selected' : ''} ${drop.isDropTarget ? 'drop-target' : ''} ${collapsed ? 'collapsed' : ''}`}>
     <div className="tier-label" style={{ backgroundColor: tier.background, color: tier.foreground }}>
       <button ref={draggable.handleRef} className="tier-grip" disabled={tier.locked} aria-label={t.dragTier(tier.name)} title={t.dragTier(tier.name)}><Icon name="grip" size={16} /></button>
@@ -78,8 +79,9 @@ export function Board({ onSelect, onAddText, onAddTier, onAddImages }: { onSelec
     return () => observer.disconnect();
   }, []);
   const style = resolveStyle(project.style);
+  const labelWidth = useLabelWidth(project.tiers, project.style);
   const backgroundUrl = useAssetUrl(style.backgroundMode === 'image' ? style.backgroundAssetId : null);
-  return <><EditingTools /><div ref={viewport} className="board-viewport" role="region" aria-label={t.board} tabIndex={0}><div className={`design-surface ${grid ? 'editing-grid' : ''}`} style={{ ...appearance(project.style, backgroundUrl), zoom: zoom / 100, width: viewportWidth || undefined }}>
+  return <><EditingTools /><div ref={viewport} className="board-viewport" role="region" aria-label={t.board} tabIndex={0}><div className={`design-surface ${grid ? 'editing-grid' : ''}`} style={{ ...appearance(project.style, backgroundUrl), '--design-label': `${labelWidth}px`, zoom: zoom / 100, width: viewportWidth || undefined } as CSSProperties}>
     <div className={`canvas-heading title-${style.titleDecoration}`} style={{ textAlign: style.titleAlign }}><div className={!style.showTitle ? 'visually-hidden' : ''}><span className="eyebrow">{t.board}</span><h1 id="board-heading" tabIndex={-1}>{project.title}</h1>{project.description && <p className="project-description">{project.description}</p>}</div>
       <button className="icon-button" onClick={() => onSelect({ kind: 'project' })} aria-label={t.projectSettings} title={t.projectSettings}><Icon name="settings" /></button>
     </div>

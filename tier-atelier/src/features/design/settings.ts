@@ -1,7 +1,7 @@
 import type { Item, TierStyle } from '../../data/types';
 
 export const designDefaults: Required<TierStyle> = {
-  background: '#ffffff', fontFamily: 'sans-serif', labelWidth: 96, itemSize: 76, gap: 8, radius: 8,
+  background: '#ffffff', fontFamily: 'sans-serif', labelWidth: 96, labelWidthMode: 'manual', itemSize: 76, gap: 8, radius: 8,
   imageFit: 'contain', showItemNames: true, showImageNames: true, showTitle: true, borderColor: '#e3e6e2',
   backgroundMode: 'solid', backgroundAssetId: null, backgroundSecondary: '#e2ece7', gradientAngle: 135, pattern: 'dots',
   textColor: '#252c29', fontSize: 11, labelFontSize: 28, padding: 12, rowGap: 0, borderWidth: 1,

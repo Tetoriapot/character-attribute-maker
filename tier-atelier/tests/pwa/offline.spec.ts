@@ -57,9 +57,12 @@ for (const path of ['/', '/nested/tier-atelier/']) test(`offline saved images, l
   await page.locator(isMobile ? '.mobile-toolbar' : '.left-panel').getByRole('button', { name: 'デザイン', exact: true }).click();
   const design = page.getByRole(isMobile ? 'dialog' : 'complementary', { name: 'プロパティ', exact: true });
   await design.getByLabel('背景色のカラーコード', { exact: true }).fill('#d5eafa');
+  await design.locator('summary').filter({ hasText: 'サイズ・余白' }).click();
+  await design.getByLabel('ランク名の幅（全ランク共通）').selectOption('auto');
   await design.getByRole('button', { name: 'デザインを保存', exact: true }).click();
   if (isMobile) await design.getByRole('button', { name: '閉じる', exact: true }).click();
   const before = await backup(page); expect(before.data.blobs).toHaveLength(25);
+  expect(before.data.project.style.labelWidthMode).toBe('auto');
   // ExportPanel has never been opened online: its lazy chunk must already be cached.
   await page.getByRole('button', { name: '出力・共有', exact: true }).click();
   const output = page.getByRole('dialog', { name: '画像出力・印刷・共有', exact: true });

@@ -4,14 +4,14 @@ import type { Asset, Crop, ID, Item, Project, Tier, TierStyle } from '../../data
 import { createTier } from '../../data/defaults';
 import { t } from '../../app/messages';
 import { d } from '../../app/designMessages';
-import { cropSchema, editedStyleSchema } from '../../data/schemas';
+import { cropSchema, editedStyleSchema, labelSizingSchema } from '../../data/schemas';
 import { cardKeys, rankKeys, type ThemeScope } from '../design/settings';
 import { themes, rankPresets } from '../design/templates';
 
 export type EditorCommand =
   | { type: 'project.update'; title: string; description: string }
   | { type: 'tier.add'; afterId?: ID }
-  | { type: 'tier.update'; id: ID; name: string; background: string; foreground: string; minHeight?: number; labelWidth?: number | null }
+  | { type: 'tier.update'; id: ID; name: string; background: string; foreground: string; minHeight?: number; labelWidth?: number | null; labelSizing?: Pick<Required<TierStyle>, 'labelWidth' | 'labelWidthMode'> }
   | { type: 'design.update'; style: Partial<TierStyle> }
   | { type: 'design.theme'; id: string; scope: ThemeScope }
   | { type: 'design.ranks'; id: string }
@@ -95,8 +95,8 @@ export function editProject(project: Project, command: EditorCommand, listener?:
         }
         if (command.type === 'design.theme') {
           const theme = themes.find((entry) => entry.id === command.id)!;
-          // Keep the user's image-name preference when changing visual templates.
-          const keys = command.scope === 'ranks' ? rankKeys : command.scope === 'cards' ? cardKeys : (Object.keys(theme.style) as (keyof TierStyle)[]).filter((key) => key !== 'backgroundAssetId' && key !== 'showImageNames');
+          // Keep the user's caption and automatic-width preferences across templates.
+          const keys = command.scope === 'ranks' ? rankKeys : command.scope === 'cards' ? cardKeys : (Object.keys(theme.style) as (keyof TierStyle)[]).filter((key) => key !== 'backgroundAssetId' && key !== 'showImageNames' && key !== 'labelWidthMode');
           const patch = Object.fromEntries(keys.map((key) => [key, theme.style[key]]));
           Object.assign(draft.style, patch);
         }
@@ -136,7 +136,8 @@ export function editProject(project: Project, command: EditorCommand, listener?:
         tier.foreground = validate(colorSchema, command.foreground, t.errors.color);
         if (command.minHeight !== undefined) tier.minHeight = validate(z.number().min(64).max(400), command.minHeight, d.invalid);
         if (command.labelWidth === null) delete tier.labelWidth;
-        else if (command.labelWidth !== undefined) tier.labelWidth = validate(z.number().min(48).max(240), command.labelWidth, d.invalid);
+        else if (command.labelWidth !== undefined) tier.labelWidth = validate(labelSizingSchema.shape.labelWidth, command.labelWidth, d.invalid);
+        if (command.labelSizing) Object.assign(draft.style, validate(labelSizingSchema, command.labelSizing, d.invalid));
         break;
       }
       case 'tier.lock': getTier(draft, command.id).locked = command.locked; break;

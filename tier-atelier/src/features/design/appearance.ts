@@ -14,7 +14,7 @@ export function appearance(style: TierStyle, imageUrl?: string): CSSProperties {
   }
   if (s.backgroundMode === 'image' && imageUrl) { backgroundImage = `url("${imageUrl}")`; backgroundSize = 'cover'; }
   const variables: Record<string, string> = {
-    '--design-label': `${Math.min(240, s.labelWidth)}px`, '--design-item': `${Math.min(200, s.itemSize)}px`,
+    '--design-label': `${s.labelWidth}px`, '--design-item': `${Math.min(200, s.itemSize)}px`,
     '--design-gap': `${Math.min(40, s.gap)}px`, '--design-radius': `${Math.min(40, s.radius)}px`,
     '--design-padding': `${s.padding}px`, '--design-row-gap': `${s.rowGap}px`, '--design-border': s.borderColor,
     '--design-border-width': `${s.borderWidth}px`, '--design-border-style': s.borderStyle,

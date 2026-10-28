@@ -7,6 +7,7 @@ import { resolveStyle, type ThemeScope } from '../features/design/settings';
 import { themes, rankPresets } from '../features/design/templates';
 import { d } from '../app/designMessages';
 import { Field } from './Fields';
+import { LabelWidthFields } from './LabelWidthFields';
 
 type Style = Required<TierStyle>;
 export function DesignPanel() {
@@ -60,7 +61,7 @@ export function DesignPanel() {
         {select('titleDecoration', d.titleDecoration, { none: d.none, line: d.line, band: d.band })}{toggle('showTitle', d.showTitle)}
       </details>
       <details className="design-section"><summary>{d.layout}</summary>
-        {number('labelWidth', d.labelWidth, 48, 240)}{number('itemSize', d.itemSize, 40, 200)}
+        <LabelWidthFields value={style} onChange={(sizing) => setStyle((current) => ({ ...current, ...sizing }))} />{number('itemSize', d.itemSize, 40, 200)}
         {number('gap', d.gap, 0, 40)}{number('padding', d.padding, 0, 48)}{number('rowGap', d.rowGap, 0, 32)}
         <p className="field-hint">{d.responsive}</p>
       </details>

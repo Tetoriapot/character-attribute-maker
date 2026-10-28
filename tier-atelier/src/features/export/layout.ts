@@ -2,6 +2,7 @@ import type { Crop, Project, Tier } from '../../data/types';
 import { isItemNameVisible, resolveStyle } from '../design/settings';
 import type { ExportOptions } from './options';
 import { e } from '../../app/exportMessages';
+import { commonLabelWidth } from '../design/labelWidth';
 
 export interface TextBlock { lines: string[]; x: number; y: number; width: number; size: number; weight: number; align: CanvasTextAlign; color: string }
 export interface CardLayout { id: string; x: number; y: number; width: number; height: number; lines: string[]; imageSize: number }
@@ -26,6 +27,7 @@ export function wrapText(text: string, maxWidth: number, measure: (text: string)
 export function buildLayout(project: Project, options: ExportOptions, measure: MeasureText): ExportLayout {
   const s = resolveStyle(project.style), padding = s.padding;
   const width = options.width, contentWidth = width - padding * 2;
+  const commonWidth = commonLabelWidth(project.tiers, s, (text) => measure(text, s.labelFontSize, 700));
   let y = padding;
   const texts: TextBlock[] = [], rows: RowLayout[] = [], breaks: number[] = [0];
   const addText = (text: string, size: number, weight: number, align: CanvasTextAlign) => {
@@ -40,7 +42,7 @@ export function buildLayout(project: Project, options: ExportOptions, measure: M
     y += 8;
   }
   const addRow = (ids: string[], tier?: Tier) => {
-    const labelWidth = tier ? Math.min(tier.labelWidth ?? s.labelWidth, contentWidth * .4) : 0;
+    const labelWidth = tier ? Math.min(s.labelWidthMode === 'auto' ? commonWidth : tier.labelWidth ?? commonWidth, contentWidth * .4) : 0;
     const available = contentWidth - labelWidth - padding * 2;
     const cardWidth = Math.min(s.itemSize, available), border = s.borderWidth;
     // At narrow output widths, borders must leave at least one pixel for the image.

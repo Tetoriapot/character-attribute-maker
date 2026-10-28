@@ -36,6 +36,7 @@ export interface TierStyle {
   background: string;
   fontFamily: string;
   labelWidth: number;
+  labelWidthMode?: 'auto' | 'manual';
   itemSize: number;
   gap: number;
   radius: number;
