@@ -74,7 +74,9 @@
 
 ## TIER ATELIER
 
-[公開ページを開く](https://tetoriapot.github.io/character-attribute-maker/tier-atelier/)。v0.7.4ではプロジェクト名を空欄にして、タイトルなしで保存・画像出力できます。操作と検証結果は[タイトルなしの検証記録](tier-atelier/docs/verification-untitled.md)を参照してください。
+[公開ページを開く](https://tetoriapot.github.io/character-attribute-maker/tier-atelier/)。v0.7.5では選択したアイテムを削除エリアへドラッグして、一括削除できます。タップ・キーボード用の削除ボタンと、1操作のUndo／Redoにも対応しています。操作と検証結果は[一括削除の検証記録](tier-atelier/docs/verification-bulk-delete.md)を参照してください。
+
+プロジェクト名を空欄にして、タイトルなしで保存・画像出力できます。詳しくは[タイトルなしの検証記録](tier-atelier/docs/verification-untitled.md)を参照してください。
 
 ランク名の列幅は自動・手動で調整できます。自動では最も長い名前に幅をそろえます。詳しくは[列幅の検証記録](tier-atelier/docs/verification-label-width.md)を参照してください。
 
