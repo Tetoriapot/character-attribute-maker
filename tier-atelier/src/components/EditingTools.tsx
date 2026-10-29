@@ -6,6 +6,7 @@ import { h } from '../app/editingMessages';
 import { d } from '../app/designMessages';
 import { t } from '../app/messages';
 import { Field } from './Fields';
+import { DeleteItemsButton } from './ItemDeletion';
 
 export function HistoryTools() {
   const past = useEditor((state) => state.history.past.length), future = useEditor((state) => state.history.future.length);
@@ -73,7 +74,7 @@ export function EditingTools() {
             if (useEditor.getState().dispatch({ type: 'items.move', ids: selected, tierId }, h.moved(selected.length))) {
               useEditor.setState((state) => ({ drafts: {}, editEpoch: state.editEpoch + 1 }));
             }
-          }}>{h.move}</button></div>
+          }}>{h.move}</button><DeleteItemsButton /></div><p className="field-hint">{h.deleteHint}</p>
       </div>}
       <p className="field-hint">{h.searchHint}</p><p className="field-hint">{h.viewHint}</p>
     </fieldset>

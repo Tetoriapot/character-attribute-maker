@@ -44,6 +44,7 @@
 [data-theme='dark'] .design-surface .icon-button:hover { background: #e8ece5; }
 [data-theme='dark'] .design-surface .icon-button[aria-pressed='true'] { background: #e6ece5; color: #155d4d; }
 [data-theme='dark'] .design-surface .count { background: #edf0e9; color: #626e63; }
+[data-theme='dark'] .design-surface .virtual-tray-shell > .field-hint { color: #69746b; }
 
 @media (max-width: 1050px) {
   .app-header { flex-wrap: wrap; }

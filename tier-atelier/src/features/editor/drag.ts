@@ -3,6 +3,7 @@ import { useEditor } from '../../stores/editorStore';
 import { itemIdsAt, itemLocation } from './commands';
 import { t } from '../../app/messages';
 import { h } from '../../app/editingMessages';
+import { deleteItems, draggedItemIds, ITEM_DELETE_TARGET } from './deletion';
 
 export function handleDrop(event: DragEndEvent) {
   const { source, target } = event.operation;
@@ -15,6 +16,13 @@ export function handleDrop(event: DragEndEvent) {
     if (index >= 0) dispatch({ type: 'tier.move', id: sourceId, index }, t.moved);
   }
   if (source.type !== 'item') return;
+  if (targetId === ITEM_DELETE_TARGET) {
+    // Only an explicit drop inside the delete area deletes; overlapping its edge is insufficient.
+    if (target.shape?.containsPoint(event.operation.position.current) && deleteItems(draggedItemIds(sourceId, selectedIds))) {
+      document.getElementById('board-heading')?.focus();
+    }
+    return;
+  }
   const multi = selectedIds.length > 1 && selectedIds.includes(sourceId);
   if (targetId.startsWith('zone:')) {
     const id = targetId.slice(5);

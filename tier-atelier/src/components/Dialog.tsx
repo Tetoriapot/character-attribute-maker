@@ -11,7 +11,7 @@ export function Dialog({ title, children, onClose, drawer = false, closeDisabled
     dialog?.showModal();
     return () => {
       dialog?.close();
-      if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
+      if (opener instanceof HTMLElement && opener.isConnected && !opener.matches(':disabled')) opener.focus();
       else document.getElementById('board-heading')?.focus();
     };
   }, []);

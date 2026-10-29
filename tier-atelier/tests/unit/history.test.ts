@@ -37,6 +37,7 @@ it('round-trips all editing commands with stable IDs, placements and unknown key
     { type: 'design.ranks', id: rankPresets[1]!.id },
     { type: 'design.background', asset: { ...asset, id: crypto.randomUUID(), blobKey: crypto.randomUUID() } },
     { type: 'design.background', asset: null },
+    { type: 'items.delete', ids: project.unrankedItemIds.slice(1, 3) },
   ];
   let state: ReturnType<typeof recordEdit> = { project, history: emptyHistory() }; const snapshots = [state.project];
   for (const command of commands) { state = recordEdit(state.project, state.history, command); snapshots.push(state.project); expect(hasValidPlacements(state.project)).toBe(true); }

@@ -24,6 +24,7 @@ export type EditorCommand =
   | { type: 'images.add'; images: { asset: Asset; item: Item }[] }
   | { type: 'item.update'; id: ID; name: string; description: string; tags: string[] }
   | { type: 'item.delete' | 'item.duplicate'; id: ID }
+  | { type: 'items.delete'; ids: ID[] }
   | { type: 'item.move'; id: ID; tierId: ID | null; index?: number }
   | { type: 'items.move'; ids: ID[]; tierId: ID | null; index?: number };
 
@@ -188,12 +189,18 @@ export function editProject(project: Project, command: EditorCommand, listener?:
         break;
       }
       case 'item.update': Object.assign(getItem(draft, command.id), details(command)); break;
-      case 'item.delete': {
-        const assetId = getItem(draft, command.id).assetId;
-        const ids = itemIdsAt(draft, itemLocation(draft, command.id));
-        ids.splice(ids.indexOf(command.id), 1);
-        delete draft.items[command.id];
-        releaseAsset(draft, assetId);
+      case 'item.delete':
+      case 'items.delete': {
+        const ids = command.type === 'items.delete' ? command.ids : [command.id];
+        const selected = new Set(ids);
+        if (!selected.size || selected.size !== ids.length || ids.some((id) => !Object.hasOwn(draft.items, id))) throw new EditorError(t.errors.missing);
+        const assets = new Set(ids.map((id) => getItem(draft, id).assetId));
+        for (const id of ids) delete draft.items[id];
+        for (const tier of draft.tiers) {
+          if (tier.itemIds.some((id) => selected.has(id))) tier.itemIds = tier.itemIds.filter((id) => !selected.has(id));
+        }
+        if (draft.unrankedItemIds.some((id) => selected.has(id))) draft.unrankedItemIds = draft.unrankedItemIds.filter((id) => !selected.has(id));
+        for (const assetId of assets) releaseAsset(draft, assetId);
         break;
       }
       case 'items.move': {

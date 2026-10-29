@@ -68,6 +68,15 @@ for (const path of ['/', '/nested/tier-atelier/']) test(`offline saved images, l
   const before = await backup(page); expect(before.data.blobs).toHaveLength(25);
   expect(before.data.project.title).toBe('');
   expect(before.data.project.style.labelWidthMode).toBe('auto');
+  await page.getByRole('button', { name: '複数選択', exact: true }).click();
+  await page.getByRole('button', { name: '表示中を選択', exact: true }).click();
+  await page.getByRole('button', { name: '選択項目を削除', exact: true }).click();
+  await page.getByRole('dialog', { name: '25件のアイテムを削除しますか？', exact: true }).getByRole('button', { name: '削除する', exact: true }).click();
+  await expect(page.locator('.item-card')).toHaveCount(0); await expect(page.getByTestId('save-status')).toHaveText('保存済み');
+  expect((await backup(page)).data.blobs).toHaveLength(0);
+  await page.getByRole('button', { name: '元に戻す', exact: true }).click();
+  await expect(page.locator('.item-thumbnail')).toHaveCount(25);
+  expect((await backup(page)).data.blobs.map((blob) => blob.dataBase64).sort()).toEqual(before.data.blobs.map((blob) => blob.dataBase64).sort());
   // ExportPanel has never been opened online: its lazy chunk must already be cached.
   await page.getByRole('button', { name: '出力・共有', exact: true }).click();
   const output = page.getByRole('dialog', { name: '画像出力・印刷・共有', exact: true });
