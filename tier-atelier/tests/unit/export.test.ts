@@ -8,6 +8,28 @@ import { createShareUrl, readShareHash, MAX_SHARE_URL } from '../../src/features
 
 const measure = (text: string, size: number) => Array.from(text).length * size;
 describe('output options and layout', () => {
+  it('accepts empty titles while retaining description, IDs and required JSON fields', () => {
+    const original = createProject();
+    for (const title of ['', '  ', '　\t\n']) {
+      const project = editProject(original, { type: 'project.update', title, description: '説明を保持' });
+      expect(project.title).toBe(''); expect(project.id).toBe(original.id);
+      expect(project.description).toBe('説明を保持'); expect(project.tiers).toEqual(original.tiers);
+      expect(parseProject(JSON.parse(JSON.stringify(project)))).toEqual(project);
+      expect(readShareHash(new URL(createShareUrl(project, 'https://example.test/')).hash)).toEqual(project);
+    }
+    for (const title of [undefined, null, 123, 'あ'.repeat(121)]) expect(() => parseProject({ ...original, title })).toThrow();
+  });
+  it('omits empty title height, leaves descriptions and unranked headings intact', () => {
+    const project = createProject(); project.title = ''; project.style.titleDecoration = 'band';
+    const visible = buildLayout(project, defaults, measure);
+    expect(visible).toEqual(buildLayout(project, { ...defaults, includeTitle: false }, measure));
+    expect(visible.rows[0]!.y).toBe(visible.padding); expect(visible.texts).toEqual([]);
+    project.description = '説明だけを表示';
+    const description = buildLayout(project, { ...defaults, includeUnranked: true }, measure);
+    expect(description.texts.map((text) => text.lines)).toEqual([['説明だけを表示'], ['未分類']]);
+    expect(description.texts[0]!.size).toBe(14); expect(description.texts[0]!.x).toBe(description.padding);
+    expect(safeFilename('', 'png')).toBe('tier-atelier.png');
+  });
   it('defaults to PNG at 1x without unranked items and rejects invalid sizes', () => {
     expect(parseOptions(defaults)).toMatchObject({ format: 'png', scale: 1, includeUnranked: false });
     expect(parseOptions({ ...defaults, transparent: true, format: 'jpeg' }).transparent).toBe(false);

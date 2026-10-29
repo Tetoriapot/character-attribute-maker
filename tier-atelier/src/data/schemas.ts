@@ -8,6 +8,7 @@ const id = z.string().min(1).max(200).refine((value) => !['__proto__', 'construc
 const color = z.string().regex(/^#[0-9a-f]{6}$/i);
 const date = z.string().refine((value) => Number.isFinite(Date.parse(value)));
 const name = z.string().trim().min(1).max(80);
+export const titleSchema = z.string().trim().max(120);
 export const cropSchema = z.looseObject({ x: z.number().min(0).max(.99), y: z.number().min(0).max(.99), width: z.number().min(.01).max(1), height: z.number().min(.01).max(1) }).refine((c) => c.x + c.width <= 1.000001 && c.y + c.height <= 1.000001);
 const item = z.looseObject({ id, assetId: id.nullable(), name, description: z.string().max(1000), tags: z.array(z.string().min(1).max(30)).max(20), createdAt: date, crop: cropSchema.nullable().optional() });
 export const labelSizingSchema = z.object({ labelWidthMode: z.enum(['auto', 'manual']), labelWidth: z.number().min(MIN_LABEL_WIDTH).max(MAX_LABEL_WIDTH) });
@@ -27,7 +28,7 @@ export const styleSchema = z.looseObject({
 // Older documents keep their previously valid size values. Newly edited values use the UI limits.
 export const editedStyleSchema = styleSchema.extend({ labelWidth: labelSizingSchema.shape.labelWidth, itemSize: z.number().min(40).max(200), gap: z.number().min(0).max(40), radius: z.number().min(0).max(40) });
 export const projectSchema = z.looseObject({
-  schemaVersion: z.literal(1), id, title: z.string().trim().min(1).max(120), description: z.string().max(1000), createdAt: date, updatedAt: date,
+  schemaVersion: z.literal(1), id, title: titleSchema, description: z.string().max(1000), createdAt: date, updatedAt: date,
   tiers: z.array(tier), unrankedItemIds: z.array(id), items: z.record(id, item), assets: z.record(id, asset),
   style: styleSchema,
 });

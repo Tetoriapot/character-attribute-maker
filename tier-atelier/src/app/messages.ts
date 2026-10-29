@@ -2,6 +2,7 @@
 export const ja = {
   brand: 'TIER ATELIER', tagline: 'ティア表エディター', phase: 'フェーズ2',
   projectDefault: '新しいTier表', newTier: '新しいランク', copySuffix: 'のコピー',
+  untitledProject: 'タイトルなし', titleOptionalHint: '空欄にすると、Tier表と出力画像のタイトルを表示しません。',
   editor: 'エディター', project: 'プロジェクト', projectTitle: 'プロジェクト名',
   projectDescription: 'プロジェクトの説明', properties: 'プロパティ',
   tiers: 'ランク', tierList: 'ランク一覧', tierSettings: 'ランク設定', tierName: 'ランク名',
@@ -41,7 +42,7 @@ export const ja = {
   dragInstructions: 'Spaceでドラッグ開始。矢印キーで移動し、Spaceで確定、Escapeでキャンセル。移動先の選択や上下ボタンでも移動できます。',
   dragStart: 'ドラッグを開始しました。', dragEnd: 'ドロップしました。', dragCancel: 'ドラッグをキャンセルしました。',
   errors: {
-    name: '名前を1〜80文字で入力してください。', title: 'プロジェクト名を1〜120文字で入力してください。',
+    name: '名前を1〜80文字で入力してください。', title: 'プロジェクト名は120文字以内で入力してください。',
     description: '説明は1,000文字以内で入力してください。', tags: 'タグは1件30文字以内、最大20件で入力してください。',
     color: '色を6桁の16進数で指定してください。', locked: 'ランクのロックを解除してから操作してください。',
     missing: '対象が見つかりません。選び直してください。', invalidMove: '移動先を選び直してください。',

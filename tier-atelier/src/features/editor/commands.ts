@@ -4,7 +4,7 @@ import type { Asset, Crop, ID, Item, Project, Tier, TierStyle } from '../../data
 import { createTier } from '../../data/defaults';
 import { t } from '../../app/messages';
 import { d } from '../../app/designMessages';
-import { cropSchema, editedStyleSchema, labelSizingSchema } from '../../data/schemas';
+import { cropSchema, editedStyleSchema, labelSizingSchema, titleSchema } from '../../data/schemas';
 import { cardKeys, rankKeys, type ThemeScope } from '../design/settings';
 import { themes, rankPresets } from '../design/templates';
 
@@ -29,7 +29,6 @@ export type EditorCommand =
 
 export class EditorError extends Error {}
 const nameSchema = z.string().trim().min(1).max(80);
-const titleSchema = z.string().trim().min(1).max(120);
 const colorSchema = z.string().regex(/^#[0-9a-f]{6}$/i);
 function validate<T>(schema: z.ZodType<T>, value: unknown, message: string): T {
   const result = schema.safeParse(value);

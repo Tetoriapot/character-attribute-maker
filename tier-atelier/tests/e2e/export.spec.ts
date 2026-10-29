@@ -77,6 +77,80 @@ test('PNG JPEG WebP, scale, alpha, filenames and saved settings work', async ({ 
   await expect(panel.getByLabel('カスタム倍率', { exact: true })).toHaveValue('1.5'); await expect(panel.getByLabel('画像形式')).toHaveValue('webp');
 });
 
+test('empty and whitespace-only titles survive history, image JSON and all output formats', async ({ page, isMobile }, info) => {
+  test.setTimeout(60000);
+  await imageProject(page, 2);
+  const properties = page.getByRole(isMobile ? 'dialog' : 'complementary', { name: 'プロパティ', exact: true });
+  const editTitle = async (title: string) => {
+    await page.locator('.canvas-heading').getByRole('button', { name: 'プロジェクト設定', exact: true }).click();
+    await properties.getByLabel('プロジェクト名', { exact: true }).fill(title);
+    await properties.getByLabel('プロジェクトの説明', { exact: true }).fill('');
+    await properties.getByRole('button', { name: '変更を適用', exact: true }).click();
+    await expect(properties.getByLabel('プロジェクト名', { exact: true })).toHaveValue('');
+    if (isMobile) await properties.getByRole('button', { name: '閉じる', exact: true }).click();
+  };
+  await editTitle('');
+  await expect(page.locator('#board-heading')).toHaveClass('visually-hidden');
+  await page.getByRole('button', { name: '元に戻す', exact: true }).click();
+  await expect(page.locator('#board-heading')).toHaveText('日本語の 出力');
+  await page.getByRole('button', { name: 'やり直す', exact: true }).click();
+  await editTitle('　   ');
+  await expect(page.getByTestId('save-status')).toHaveText('保存済み'); await page.reload();
+  await expect(page.locator('#board-heading')).toHaveClass('visually-hidden');
+  expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
+  await page.screenshot({ path: `.qa/${info.project.name}-untitled-board.png`, fullPage: true });
+  const pending = page.waitForEvent('download'); await page.locator('.canvas-footer button').click();
+  const file = await pending; expect(file.suggestedFilename()).toBe('tier-atelier.tier.json');
+  const data = JSON.parse(await readFile((await file.path())!, 'utf8')) as { project: Project; blobs: { key: string; mimeType: string; dataBase64: string }[] };
+  expect(data.project.title).toBe(''); expect(data.blobs).toHaveLength(2);
+  await open(page); const output = dialog(page);
+  await output.getByLabel('未分類を含める').check();
+  for (const format of ['png', 'jpeg', 'webp']) {
+    await output.getByLabel('画像形式').selectOption(format);
+    await output.getByLabel('タイトル・説明を含める').check(); await generate(page);
+    const included = await download(page); expect(included.name).toBe(`tier-atelier.${format === 'jpeg' ? 'jpg' : format}`);
+    await output.getByLabel('タイトル・説明を含める').uncheck(); await generate(page);
+    expect((await download(page)).buffer.equals(included.buffer)).toBe(true);
+    if (format === 'png') await writeFile(`.qa/${info.project.name}-untitled-output.png`, included.buffer);
+  }
+  await output.getByRole('button', { name: '閉じる', exact: true }).click();
+  await importData(page, data.project, data.blobs);
+  await expect(page.locator('.item-card')).toHaveCount(2);
+  await page.reload(); await expect(page.locator('#board-heading')).toHaveClass('visually-hidden');
+  await open(page); await output.getByLabel('画像形式').selectOption('png'); await output.getByLabel('タイトル・説明を含める').check(); await generate(page);
+  expect((await download(page)).buffer.equals(await readFile(`.qa/${info.project.name}-untitled-output.png`))).toBe(true);
+  await output.getByRole('button', { name: '印刷ページを作成', exact: true }).click();
+  await expect(output.getByRole('button', { name: '印刷する', exact: true })).toBeEnabled({ timeout: 15000 });
+  const frame = page.frames().find((frame) => frame.parentFrame() !== null)!;
+  expect(await frame.locator('img').count()).toBeGreaterThan(0);
+  expect(await frame.locator('body').innerText()).toBe('');
+});
+
+test('untitled description and tray headings have no title decoration; blank projects can be created and copied', async ({ page }) => {
+  test.setTimeout(60000);
+  const project = createProject(); project.title = ''; project.description = 'タイトルなしで説明を保持';
+  let plain: Buffer | undefined;
+  for (const titleDecoration of ['none', 'line', 'band'] as const) {
+    project.style.titleDecoration = titleDecoration;
+    await importData(page, project); await open(page);
+    await dialog(page).getByLabel('タイトル・説明を含める').check(); await dialog(page).getByLabel('未分類を含める').check();
+    await generate(page); const file = await download(page);
+    if (plain) expect(file.buffer.equals(plain)).toBe(true); else plain = file.buffer;
+    await dialog(page).getByRole('button', { name: '閉じる', exact: true }).click();
+  }
+  await page.getByRole('button', { name: 'プロジェクト一覧', exact: true }).click();
+  const manager = page.getByRole('dialog', { name: 'プロジェクト一覧', exact: true });
+  await manager.getByRole('button', { name: '新規作成', exact: true }).click(); await expect(manager).not.toBeVisible();
+  await page.getByRole('button', { name: 'プロジェクト一覧', exact: true }).click();
+  const current = manager.getByTestId('project-entry').filter({ has: page.locator('.current-project') });
+  await expect(current.locator('strong')).toHaveText('タイトルなし');
+  await current.getByRole('button', { name: '複製', exact: true }).click(); await expect(manager).not.toBeVisible();
+  await expect(page.locator('#board-heading')).toHaveClass('visually-hidden');
+  await page.getByRole('button', { name: 'プロジェクト一覧', exact: true }).click();
+  await expect(current.locator('strong')).toHaveText('タイトルなし');
+  expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
+});
+
 test('21 original images, cropping, content switches and editor UI exclusion are verified in the output', async ({ page, isMobile }, info) => {
   await imageProject(page); await open(page);
   const panel = dialog(page);

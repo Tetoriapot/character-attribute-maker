@@ -23,7 +23,7 @@ export function SharedProject() {
   if (!incoming) return null;
   return <Dialog title={e.importTitle} onClose={close}>
     {incoming.error ? <p className="form-error" role="alert">{incoming.error}</p> : incoming.project && <>
-      <h3 className="delete-name">{incoming.project.title}</h3><p>{t.tierCount(incoming.project.tiers.length)} · {t.itemCount(Object.keys(incoming.project.items).length)}</p><p>{e.importHint}</p>
+      <h3 className="delete-name">{incoming.project.title || t.untitledProject}</h3><p>{t.tierCount(incoming.project.tiers.length)} · {t.itemCount(Object.keys(incoming.project.items).length)}</p><p>{e.importHint}</p>
       <button className="button primary full" disabled={busy} onClick={() => {
         if (incoming.project && confirmDrafts()) void importSharedProject(incoming.project).then((success) => { if (success) close(); else setError(useEditor.getState().error ?? e.invalidUrl); });
       }}>{e.import}</button>

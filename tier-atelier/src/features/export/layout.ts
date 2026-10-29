@@ -28,16 +28,17 @@ export function buildLayout(project: Project, options: ExportOptions, measure: M
   const s = resolveStyle(project.style), padding = s.padding;
   const width = options.width, contentWidth = width - padding * 2;
   const commonWidth = commonLabelWidth(project.tiers, s, (text) => measure(text, s.labelFontSize, 700));
+  const hasTitle = project.title.trim().length > 0;
   let y = padding;
   const texts: TextBlock[] = [], rows: RowLayout[] = [], breaks: number[] = [0];
   const addText = (text: string, size: number, weight: number, align: CanvasTextAlign) => {
-    const inset = s.titleDecoration === 'band' ? 16 : 0;
+    const inset = hasTitle && s.titleDecoration === 'band' ? 16 : 0;
     const lines = wrapText(text, contentWidth - inset * 2, (value) => measure(value, size, weight));
     texts.push({ lines, x: padding + inset, y, width: contentWidth - inset * 2, size, weight, align, color: s.textColor });
     y += lines.length * size * 1.5 + 12;
   };
-  if (options.includeTitle) {
-    addText(project.title, s.titleSize, 700, s.titleAlign);
+  if (options.includeTitle && (hasTitle || project.description)) {
+    if (hasTitle) addText(project.title, s.titleSize, 700, s.titleAlign);
     if (project.description) addText(project.description, 14, 400, s.titleAlign);
     y += 8;
   }

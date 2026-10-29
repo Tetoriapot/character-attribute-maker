@@ -25,12 +25,12 @@ export function ProjectManager({ onClose }: { onClose: () => void }) {
     <p className="field-hint">{s.backupHint}</p>
     <fieldset disabled={busy}>
       <form className="project-create" onSubmit={(event) => { event.preventDefault(); void perform(() => newProject(title)); }}>
-        <Field label={s.projectName}>{(id) => <input id={id} value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={120} />}</Field>
+        <Field label={s.projectName} hint={t.titleOptionalHint}>{(id) => <input id={id} value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} />}</Field>
         <button className="button primary" type="submit">{s.create}</button>
       </form>
       <ul className="project-list">
         {projects.map((project) => <li key={project.id} data-testid="project-entry">
-          <div className="project-summary"><strong>{project.title}</strong><span>{t.itemCount(project.count)} · {new Date(project.updatedAt).toLocaleString('ja-JP')}</span>{project.id === active && <span className="current-project">{s.current}</span>}</div>
+          <div className="project-summary"><strong>{project.title || t.untitledProject}</strong><span>{t.itemCount(project.count)} · {new Date(project.updatedAt).toLocaleString('ja-JP')}</span>{project.id === active && <span className="current-project">{s.current}</span>}</div>
           <div className="project-actions">
             <button className="button secondary small" disabled={project.id === active} onClick={() => void perform(() => openProject(project.id))}>{s.open}</button>
             <button className="button secondary small" onClick={() => void perform(() => duplicateProject(project.id))}>{s.duplicate}</button>
@@ -56,7 +56,7 @@ export function ProjectManager({ onClose }: { onClose: () => void }) {
     {saveError && <p className="form-error" role="alert">{saveError}</p>}
     <Feedback />
     {deleting && <Dialog title={s.deleteTitle} closeDisabled={busy} onClose={() => { if (!busy) setDeleting(undefined); }}>
-      <p className="delete-name">{deleting.title}</p><p>{s.deleteHint}</p>
+      <p className="delete-name">{deleting.title || t.untitledProject}</p><p>{s.deleteHint}</p>
       <div className="dialog-actions"><button className="button secondary" disabled={busy} onClick={() => setDeleting(undefined)}>{t.cancel}</button>
         <button className="button danger" disabled={busy} onClick={() => {
           if (confirmDrafts()) void removeProject(deleting.id, deleting.revision).then((success) => { if (success) setDeleting(undefined); });

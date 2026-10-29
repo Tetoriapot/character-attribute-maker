@@ -20,6 +20,7 @@ it('round-trips all editing commands with stable IDs, placements and unknown key
   const imageId = crypto.randomUUID();
   const commands: EditorCommand[] = [
     { type: 'project.update', title: '変更', description: '説明' }, { type: 'tier.add' },
+    { type: 'project.update', title: '', description: '説明は保持' },
     { type: 'item.add', name: '追加項目', description: '追加説明', tags: ['新規'] },
     { type: 'tier.update', id: tier.id, name: '最上位', background: '#123456', foreground: '#ffffff', minHeight: 140, labelWidth: 120, labelSizing: { labelWidthMode: 'auto', labelWidth: 300 } },
     { type: 'tier.duplicate', id: tier.id }, { type: 'tier.move', id: tier.id, index: 2 },
@@ -49,7 +50,7 @@ it('caps history at 100, ignores no-op/rejected edits and clears redo after a ne
   for (let index = 0; index < 105; index++) state = recordEdit(state.project, state.history, { type: 'project.update', title: `変更${index}`, description: '' });
   expect(state.history.past).toHaveLength(HISTORY_LIMIT);
   expect(recordEdit(state.project, state.history, { type: 'tier.move', id: state.project.tiers[0]!.id, index: 0 }).history).toBe(state.history);
-  expect(() => recordEdit(state.project, state.history, { type: 'project.update', title: '', description: '' })).toThrow();
+  expect(() => recordEdit(state.project, state.history, { type: 'project.update', title: 'a'.repeat(121), description: '' })).toThrow();
   for (let index = 0; index < 100; index++) state = travelHistory(state.project, state.history, 'undo');
   expect(state.project.title).toBe('変更4');
   expect(travelHistory(state.project, state.history, 'undo').project).toBe(state.project);

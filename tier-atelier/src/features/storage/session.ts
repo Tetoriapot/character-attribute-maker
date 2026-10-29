@@ -141,7 +141,7 @@ export function duplicateProject(id: string) {
   return exclusive(async () => {
     const source = await loadProject(id);
     const project = structuredClone(source.project);
-    project.id = crypto.randomUUID(); project.title = `${project.title.slice(0, 116)}（複製）`;
+    project.id = crypto.randomUUID(); if (project.title) project.title = `${project.title.slice(0, 116)}（複製）`;
     project.createdAt = project.updatedAt = new Date().toISOString();
     const nextRevision = await saveSnapshot(project, 0, []);
     await activate(project, nextRevision, source.blobs);

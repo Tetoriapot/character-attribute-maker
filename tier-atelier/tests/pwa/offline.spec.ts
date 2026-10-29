@@ -61,7 +61,12 @@ for (const path of ['/', '/nested/tier-atelier/']) test(`offline saved images, l
   await design.getByLabel('ランク名の幅（全ランク共通）').selectOption('auto');
   await design.getByRole('button', { name: 'デザインを保存', exact: true }).click();
   if (isMobile) await design.getByRole('button', { name: '閉じる', exact: true }).click();
+  await page.locator('.canvas-heading').getByRole('button', { name: 'プロジェクト設定', exact: true }).click();
+  await design.getByLabel('プロジェクト名', { exact: true }).fill('');
+  await design.getByRole('button', { name: '変更を適用', exact: true }).click();
+  if (isMobile) await design.getByRole('button', { name: '閉じる', exact: true }).click();
   const before = await backup(page); expect(before.data.blobs).toHaveLength(25);
+  expect(before.data.project.title).toBe('');
   expect(before.data.project.style.labelWidthMode).toBe('auto');
   // ExportPanel has never been opened online: its lazy chunk must already be cached.
   await page.getByRole('button', { name: '出力・共有', exact: true }).click();
@@ -75,7 +80,7 @@ for (const path of ['/', '/nested/tier-atelier/']) test(`offline saved images, l
     await expect(output.getByRole('button', { name: '画像を保存', exact: true })).toBeEnabled();
     const waiting = page.waitForEvent('download'); await output.getByRole('button', { name: '画像を保存', exact: true }).click();
     const file = await waiting, bytes = await readFile((await file.path())!);
-    expect(file.suggestedFilename()).toBe(`新しいTier表.${format === 'jpeg' ? 'jpg' : format}`);
+    expect(file.suggestedFilename()).toBe(`tier-atelier.${format === 'jpeg' ? 'jpg' : format}`);
     const decoded = await page.evaluate(async ({ data, format }) => {
       const bitmap = await createImageBitmap(new Blob([Uint8Array.from(atob(data), (c) => c.charCodeAt(0))], { type: `image/${format}` }));
       const canvas = document.createElement('canvas'); canvas.width = bitmap.width; canvas.height = bitmap.height;

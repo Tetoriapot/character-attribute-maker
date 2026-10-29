@@ -114,7 +114,7 @@ export default function App() {
       <a className="skip-link" href="#board-heading">{t.board}</a>
       <header className="app-header">
         <div className="brand"><span className="brand-mark" aria-hidden="true"><i /><i /><i /></span><div><strong>{t.brand}</strong><span>{t.tagline}</span></div></div>
-        <div className="header-project"><span className="header-divider" /><button onClick={() => choose({ kind: 'project' })} title={t.projectSettings}>{project.title}<Icon name="down" size={14} /></button></div>
+        <div className="header-project"><span className="header-divider" /><button onClick={() => choose({ kind: 'project' })} title={t.projectSettings}>{project.title || t.untitledProject}<Icon name="down" size={14} /></button></div>
         <button className="button secondary small projects-button" disabled={busy} onClick={() => showDialog('projects')}>{s.projects}</button>
         <div className="header-actions">
           <button className="header-tool" disabled={busy} onClick={() => showDialog('updates')}><Icon name="info" /><span>{c.updates}</span></button>

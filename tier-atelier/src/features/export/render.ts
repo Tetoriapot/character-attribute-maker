@@ -72,7 +72,7 @@ export async function renderProject(project: Project, records: Map<string, Store
       const x = block.x + (block.align === 'center' ? block.width / 2 : block.align === 'right' ? block.width : 0);
       block.lines.forEach((line, index) => ctx.fillText(line, x, block.y + index * block.size * 1.5, Math.max(1, block.width)));
     };
-    if (options.includeTitle && layout.texts[0]) {
+    if (options.includeTitle && project.title.trim() && layout.texts[0]) {
       const title = layout.texts[0], height = title.lines.length * title.size * 1.5;
       ctx.fillStyle = s.textColor;
       if (s.titleDecoration === 'line') ctx.fillRect(layout.padding, title.y + height + 3, layout.width - 2 * layout.padding, 2);

@@ -159,8 +159,8 @@ function ProjectProperties({ project }: { project: Project }) {
   useEffect(() => { setTitle(project.title); setDescription(project.description); }, [project.title, project.description]);
   useDraft(title !== project.title || description !== project.description);
   return <><div className="property-kind"><span>{t.projectSettings}</span><Icon name="settings" /></div>
-    <form onSubmit={(event) => { event.preventDefault(); dispatch({ type: 'project.update', title, description }); }}>
-      <Field label={t.projectTitle}>{(id) => <input id={id} value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={120} />}</Field>
+    <form onSubmit={(event) => { event.preventDefault(); if (dispatch({ type: 'project.update', title, description })) setTitle(useEditor.getState().project.title); }}>
+      <Field label={t.projectTitle} hint={t.titleOptionalHint}>{(id) => <input id={id} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />}</Field>
       <Field label={t.projectDescription}>{(id) => <textarea id={id} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} rows={4} />}</Field>
       <button type="submit" className="button primary full"><Icon name="check" />{t.apply}</button>
     </form><div className="property-section"><p className="muted">{t.chooseHint}</p></div>
