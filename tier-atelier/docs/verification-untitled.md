@@ -22,4 +22,10 @@ PC・スマートフォン条件でタイトルを削除し、Undo／Redo、再�
 
 本番ビルドのPC・スマートフォン条件でも、空白だけのタイトルの保存・JSON復元・オフライン再読込・PNG出力を確認しました。空の5段のTier表は960×544pxで出力され、タイトル用の余白と編集UIは入りません。コンソールエラーは0件です。
 
-画像登録、デザイン編集、ランク名の自動・手動幅、プロジェクト管理、自動保存、画像込みJSON、Undo／Redo、PNG・JPEG・WebP出力、検索・選択、PWA更新とオフライン編集の既存テストも成功しています。公開先での確認結果は公開後に追記します。
+画像登録、デザイン編集、ランク名の自動・手動幅、プロジェクト管理、自動保存、画像込みJSON、Undo／Redo、PNG・JPEG・WebP出力、検索・選択、PWA更新とオフライン編集の既存テストも成功しています。
+
+## 公開確認
+
+v0.7.4を[GitHub Actionsの実行40879309395](https://github.com/Tetoriapot/character-attribute-maker/actions/runs/40879309395)で公開しました。GitHub側でも型チェック・lint・単体91件・ブラウザ116件・PWA16件・本番ビルドが成功し、ブラウザ8件・PWA2件は端末条件によりスキップされています。
+
+[公開ページ](https://tetoriapot.github.io/character-attribute-maker/tier-atelier/)でPC・スマートフォン条件のv0.7.4表示、空白だけのタイトルの保存・JSON復元・オフライン再読込・PNG出力を確認しました。どちらも960×544pxの画像を`tier-atelier.png`として保存でき、コンソールエラーは0件でした。
